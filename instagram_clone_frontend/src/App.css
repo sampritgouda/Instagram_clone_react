@@ -1,0 +1,26 @@
+/* App.css */
+@media (min-width: 768px) {
+  .w-md-50 {
+    width: 50% !important;
+  }
+  .w-mad-80{
+    width: 80% !important;
+  }
+}
+.sidebar-link:hover {
+  background-color: #d3d3d3; /* light grey */
+  color: black !important;  /* change text color on hover if needed */
+  text-decoration: none;
+}
+
+.story-bubble .progress-arc {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  margin-right: 2px;
+  transition: background-color 0.3s ease;
+}
+
+.story-bubble .progress-arc:last-child {
+  margin-right: 0;
+}
