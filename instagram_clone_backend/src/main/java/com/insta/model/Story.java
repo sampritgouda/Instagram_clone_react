@@ -54,6 +54,7 @@ public class Story {
     @Column(nullable = false)
     private LocalDateTime expiresAt;
     
+    private String storyPublicId;
     @OneToMany(mappedBy = "story", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<StoryView> storyViews;
@@ -63,4 +64,6 @@ public class Story {
     
     @Transient
     private int seenCount;
+    
+    
 }

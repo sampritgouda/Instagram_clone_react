@@ -36,6 +36,7 @@ public class Post {
     @Transient
     private boolean isLiked;
     
+    private String postPublicId;
     @Transient
     private int likeCount;
     

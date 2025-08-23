@@ -25,10 +25,12 @@ public class Comment {
     // Comment can be for a post or reel
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
+    @JsonIgnore
     private Post post;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reel_id")
+    @JsonIgnore
     private Reel reel;
 
     private String text;

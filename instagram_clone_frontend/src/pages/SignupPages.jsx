@@ -12,11 +12,12 @@
         const handleSignup = async (e) => {
           e.preventDefault();
 
+          console.log(name)
           try {
-            const response = await fetch("http://localhost:8080/api/auth/signup", {
+            const response = await fetch("http://localhost:8080/api/auth/register", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name, email, password }),
+              body: JSON.stringify({ "username" :name, email, password }),
             });
 
             const data = await response.text();

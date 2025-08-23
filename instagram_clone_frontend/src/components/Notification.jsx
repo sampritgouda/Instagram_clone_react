@@ -46,8 +46,8 @@ useEffect(()=>{
 },[])
 
   return (
-    <div className='d-flex flex-column gap-3 text-white bg-black border-end border-secondary position-relative' style={{width:'25%',height:'100vh'}}>
-      <button onClick={onBack} className='btn btn-danger position-absolute py-0' style={{top:'0px',right:'0px'}}>Close</button>
+    <div className='d-flex flex-column gap-3 text-white bg-black border-end border-secondary position-fixed' style={{width:'300px',height:'100vh',top:0,left:0,zIndex:9999}}>
+      <button onClick={onBack} className='btn btn-secondary position-absolute py-2' style={{top:'0px',right:'0px'}}>X</button>
       <span className='px-4 w-100 text-center py-2'>Follow Requests</span>
       {followrequest.map((req,val)=>(
         <div key={val} className='d-flex align-items-center justify-content-between px-3'>

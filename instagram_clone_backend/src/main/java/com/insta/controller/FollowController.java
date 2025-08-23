@@ -98,15 +98,16 @@ public class FollowController {
 	        boolean isRequested = followerUser.getFollowrequests().stream()
 	        	    .anyMatch(r -> r.getRequester().getId().equals(logedUser.getId()) 
 	        	                && r.getStatus() == FollowRequest.RequestStatus.PENDING);
-
+	        boolean own = followerUser.getId().equals(logedUser.getId());
 
 	        return Followresponce.builder()
 	            .id(followerUser.getId())
 	            .username(followerUser.getUsername())
 	            .profileurl(followerUser.getProfilePicUrl())
-	            .isFollowing(isFollowing)
+	            .isFollowed(isFollowing)
 	            .isPrivate(followerUser.getIsPrivate())
 	            .isRequested(isRequested)
+	            .own(own)
 	            .build();
 	    }).toList();
 	}
@@ -123,7 +124,7 @@ public List<Followresponce> getFollowings(
 	User user = userRepository.findById(userId).orElseThrow();
 	
 	return user.getFollowing().stream().map(following -> {
-		User followingUser = following.getFollower();
+		User followingUser = following.getFollowing();
 		
 		boolean isFollowing = followingUser.getFollowers()
 				.stream()
@@ -132,15 +133,16 @@ public List<Followresponce> getFollowings(
 		boolean isRequested = followingUser.getFollowrequests().stream()
 				.anyMatch(r -> r.getRequester().getId().equals(logedUser.getId()) 
 						&& r.getStatus() == FollowRequest.RequestStatus.PENDING);
-		
+		boolean own  = followingUser.getId().equals(logedUser.getId());
 		
 		return Followresponce.builder()
 				.id(followingUser.getId())
 				.username(followingUser.getUsername())
 				.profileurl(followingUser.getProfilePicUrl())
-				.isFollowing(isFollowing)
+				.isFollowed(isFollowing)
 				.isPrivate(followingUser.getIsPrivate())
 				.isRequested(isRequested)
+				.own(own)
 				.build();
 	}).toList();
 }

@@ -1,15 +1,18 @@
 package com.insta.controller;
 
-import java.time.LocalDateTime;
+
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.cloudinary.Cloudinary;
+
 import com.insta.dto.UserStoriesResponse;
 import com.insta.model.Post;
 import com.insta.model.Story;
@@ -47,38 +50,15 @@ public class StoryController {
             @RequestHeader("Authorization") String authHeader
     ) {
         try {
-            // 1. Extract token & get user
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid Authorization header");
-            }
-
-            String token = authHeader.substring(7);
-            String email = jwtUtil.extractUsername(token);
-            User user = userRepository.findByEmail(email).orElse(null);
+            User user = userService.getUserByToken(authHeader);
 
             if (user == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
             }
 
-            // 2. Upload to Cloudinary
-            Map uploadResult = cloudinary.uploader().upload(
-                    mediaFile.getBytes(),
-                    Map.of("resource_type", "auto") 
-            );
-
-            String url = uploadResult.get("secure_url").toString();
-            String resourceType = uploadResult.get("resource_type").toString();
-
-            // 3. Save post to DB
-            Story story = new Story();
-            
-           story.setMediaType(resourceType);
-           story.setMediaUrl(url);
-           story.setUser(user);
-           story.setCreatedAt(LocalDateTime.now());
-           story.setExpiresAt(LocalDateTime.now().plusHours(24));
-
-           storyRepository.save(story);
+            String[] uploadStory = storyService.uploadStory(mediaFile, user);
+            String resourceType = uploadStory[0];
+            String url = uploadStory[1];
 
             return ResponseEntity.ok(Map.of(
                     "message", "Story Added successfully",
@@ -90,6 +70,20 @@ public class StoryController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error while uploading Story", "details", e.getMessage()));
         }
+    }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteStory(@PathVariable("id")Long id)
+    {
+    	try {
+    		
+    		storyService.deleteStory(id);
+    		ResponseEntity.ok().build();
+		} catch (Exception e) {
+			e.printStackTrace();
+			ResponseEntity.badRequest().build();
+		}
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
     
     @GetMapping
@@ -115,4 +109,8 @@ public class StoryController {
 			return ResponseEntity.badRequest().build();
 		}
     }
+    
+    
+    
+
 }

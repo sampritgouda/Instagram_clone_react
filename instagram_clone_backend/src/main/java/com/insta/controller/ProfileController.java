@@ -1,14 +1,27 @@
 package com.insta.controller;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.cloudinary.Cloudinary;
 import com.insta.dto.FeedItemDTO;
 import com.insta.dto.UserResponse;
-
 import com.insta.model.FollowRequest;
-
-
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.insta.model.Post;
 import com.insta.model.Reel;
 import com.insta.model.Save;
@@ -19,18 +32,10 @@ import com.insta.repository.PostRepository;
 import com.insta.repository.ReelRepository;
 import com.insta.repository.SaveRepository;
 import com.insta.repository.UserRepository;
+import com.insta.security.JwtUtil;
 import com.insta.service.UserService;
 
 import lombok.RequiredArgsConstructor;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
 
 
 @RestController
@@ -44,6 +49,8 @@ public class ProfileController {
 	private final FollowRequestRepository followRequestRepository;
 	private final FollowerRepository followerRepository;
 	private final SaveRepository saveRepository;
+    private final Cloudinary cloudinary;
+    private final JwtUtil jwtUtil;
 
 	@GetMapping("/user")
 	public UserResponse goProfile(@RequestParam("userId")Long userId,@RequestHeader("Authorization") String authrization)
@@ -192,6 +199,146 @@ public class ProfileController {
 	            .filter(Objects::nonNull) // remove nulls
 	            .collect(Collectors.toList());
 	}
+	
+	
+	
+	@PostMapping("/image")
+    public ResponseEntity<?> updateProfileImage(
+            @RequestPart("image") MultipartFile imageFile,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        try {
+            // 1. Validate token
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Missing or invalid Authorization header"));
+            }
+
+            String token = authHeader.substring(7);
+            String email = jwtUtil.extractUsername(token);
+            User user = userRepository.findByEmail(email).orElse(null);
+
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Invalid token"));
+            }
+
+            // 2. Upload image to Cloudinary
+            Map uploadResult = cloudinary.uploader().upload(
+                    imageFile.getBytes(),
+                    Map.of("resource_type", "image")
+            );
+            if (user.getProfilePicPublicId() != null) {
+                cloudinary.uploader().destroy(user.getProfilePicPublicId(), Map.of());
+            }
+
+            String url = uploadResult.get("secure_url").toString();
+            String public_id = uploadResult.get("public_id").toString();
+
+            // 3. Update user profile picture in DB
+            user.setProfilePicUrl(url);
+            user.setProfilePicPublicId(public_id);
+            userRepository.save(user);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Profile picture updated successfully",
+                    "profilePicUrl", url
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error while updating profile picture", "details", e.getMessage()));
+        }
+    }
+	
+	
+	 @PutMapping("/update")
+	    public ResponseEntity<?> updateProfile(
+	            @RequestBody Map<String, String> body,
+	            @RequestHeader("Authorization") String authHeader
+	    ) {
+	        try {
+	            User user = userService.getUserByToken(authHeader);
+	           
+
+	            // 2. Extract fields from request
+	            String bio = body.get("bio");
+	            String gender = body.get("gender");
+
+	            if (bio != null) {
+	                user.setBio(bio);
+	            }
+	            if (gender != null) {
+	                user.setGender(gender);
+	            }
+
+	            // 3. Save updates
+	            userRepository.save(user);
+
+	            return ResponseEntity.ok(Map.of(
+	                    "message", "Profile updated successfully",
+	                    "bio", user.getBio(),
+	                    "gender", user.getGender()
+	            ));
+
+	        } catch (Exception e) {
+	            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+	                    .body(Map.of("error", "Error updating profile", "details", e.getMessage()));
+	        }
+	    }
+	 
+	 
+	 @GetMapping("/edit")
+	 public ResponseEntity<?> getProfile(@RequestHeader("Authorization") String authHeader) {
+	     User user = userService.getUserByToken(authHeader);
+	     if (user == null) {
+	         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+	                 .body(Map.of("error", "Invalid token"));
+	     }
+
+	     return ResponseEntity.ok(Map.of(
+	    		    "username", user.getUsername(),
+	    		    "profilePicUrl", user.getProfilePicUrl(),
+	    		    "bio", user.getBio() != null ? user.getBio() : "",
+	    		    "gender", user.getGender() != null ? user.getGender() : ""
+	    		));
+
+	 }
+	 
+	 
+	 @GetMapping("/privacy")
+	    public ResponseEntity<?> getPrivacy(@RequestHeader("Authorization") String authHeader) {
+	       User user = userService.getUserByToken(authHeader);
+
+	        if (user == null) {
+	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "User not found"));
+	        }
+
+	        return ResponseEntity.ok(Map.of("private", user.getIsPrivate()));
+	    }
+
+	    // ✅ Update privacy status
+	    @PutMapping("/privacy")
+	    public ResponseEntity<?> updatePrivacy(
+	            @RequestHeader("Authorization") String authHeader,
+	            @RequestBody Map<String, Boolean> body) {
+
+	        User user = userService.getUserByToken(authHeader);
+
+	        if (user == null) {
+	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "User not found"));
+	        }
+
+	        boolean newStatus = body.getOrDefault("private", false);
+	        user.setIsPrivate(newStatus);
+	        userRepository.save(user);
+
+	        return ResponseEntity.ok(Map.of(
+	                "message", "Privacy updated successfully",
+	                "private", newStatus
+	        ));
+	    }
+
 
 	
 }

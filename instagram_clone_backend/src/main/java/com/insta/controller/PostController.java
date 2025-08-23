@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.insta.model.Post;
 import com.insta.model.User;
 import com.insta.repository.PostRepository;
@@ -45,37 +46,15 @@ public class PostController {
             @RequestHeader("Authorization") String authHeader
     ) {
         try {
-            // 1. Extract token & get user
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid Authorization header");
-            }
-
-            String token = authHeader.substring(7);
-            String email = jwtUtil.extractUsername(token);
-            User user = userRepository.findByEmail(email).orElse(null);
+           User user = userService.getUserByToken(authHeader);
 
             if (user == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
             }
 
-            // 2. Upload to Cloudinary
-            Map uploadResult = cloudinary.uploader().upload(
-                    mediaFile.getBytes(),
-                    Map.of("resource_type", "auto") // handles image/video automatically
-            );
-
-            String url = uploadResult.get("secure_url").toString();
-            String resourceType = uploadResult.get("resource_type").toString();
-
-            // 3. Save post to DB
-            Post post = new Post();
-            post.setCaption(caption);
-            post.setImageUrl(url);
-            post.setMediaType(resourceType);
-            post.setUser(user);
-            post.setCreatedAt(LocalDateTime.now());
-
-            postRepository.save(post);
+           String[] uploadPost = postService.UploadPost(mediaFile, caption, user);
+           String resourceType = uploadPost[0];
+           String url = uploadPost[1];
 
             return ResponseEntity.ok(Map.of(
                     "message", "Post created successfully",
@@ -97,4 +76,22 @@ public class PostController {
     {
     	return postService.getAllPosts(page, limit, authHeader);
     }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletePost(@PathVariable("id") Long id)
+    {
+    	try {
+    		Post post = postRepository.findById(id).orElseThrow();
+        	cloudinary.uploader().destroy(
+                    post.getPostPublicId(),
+                    ObjectUtils.asMap("resource_type", post.getMediaType()) 
+                );
+        	postRepository.delete(post);
+        	return ResponseEntity.ok().build();
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().build();
+		}
+    }
+    
+
 }

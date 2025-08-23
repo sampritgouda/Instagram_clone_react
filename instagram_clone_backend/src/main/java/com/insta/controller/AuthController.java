@@ -44,6 +44,8 @@ public class AuthController {
         user.setUsername(req.getUsername());
         user.setEmail(req.getEmail());
         user.setPassword(passwordEncoder.encode(req.getPassword()));
+        user.setIsPrivate(false);
+        user.setProfilePicUrl("https://res.cloudinary.com/dr0yboilf/image/upload/v1754637397/i721vyva5s2broewwwss.jpg");
         userRepository.save(user);
         return ResponseEntity.ok("Registered");
     }

@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
 
 const ProfileHeader = ({ user }) => {
-  const [following, setFollowing] = useState(user.followed);
-  const [requested, setRequested] = useState(user.requested);
-  const [followMsg, setFollowMsg] = useState('');
+  const [following, setFollowing] = useState(false);
+  const [requested, setRequested] = useState(false);
+  const [followMsg, setFollowMsg] = useState('follow');
 
   const token = localStorage.getItem('token');
 
   const followUser = async (id) => {
-    let resp;
+    try {
+      let resp;
 
-    if (!following && !requested) {
-      // Public profile → follow directly
-      
+      if (!following && !requested) {
+        // Not following → send follow request
         resp = await fetch(`http://localhost:8080/api/user/follow`, {
           method: 'POST',
           headers: {
@@ -21,53 +21,58 @@ const ProfileHeader = ({ user }) => {
           },
           body: JSON.stringify({ id }),
         });
-        } 
-    // Already following → unfollow
-    else {
-      resp = await fetch(`http://localhost:8080/api/user/follow`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id }),
-      });
+      } else {
+        // Already following or requested → unfollow/cancel request
+        resp = await fetch(`http://localhost:8080/api/user/follow`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ id }),
+        });
+      }
 
-    }
+      if (resp.ok) {
+        if (!following && !requested) {
+          if (user.private) {
+            setRequested(true);  // private profile → request sent
+          } else {
+            setFollowing(true);  // public profile → follow directly
+          }
+        } else {
 
-    if(resp.ok)
-    {
-        if(!following && !requested)
-        {
-           !user.isPrivate && setFollowing(true)
-           user.isPrivate && setRequested(true)
+          setFollowing(false);
+          setRequested(false);
         }
-        requested && setRequested(false)
-        following && setFollowing(false)
-        
+      }
+    } catch (err) {
+      console.error("Follow/unfollow error:", err);
     }
   };
 
-  // Update button label
   useEffect(() => {
-    if (following) setFollowMsg('unfollow');
+    setFollowing(user.followed || false);
+    setRequested(user.requested || false);
+  }, [user]);
+
+  useEffect(() => {
+    if (following) setFollowMsg('following');
     else if (requested) setFollowMsg('requested');
     else setFollowMsg('follow');
   }, [following, requested]);
 
   return (
     <div>
-      
-        {!user.own && (
-          <button
-            className="btn text-white border-white py-0"
-            style={{ cursor: 'pointer', height: '30px' }}
-            onClick={() => followUser(user.id)}
-          >
-            {followMsg}
-          </button>
-        )}
-      
+      {!user.own && (
+        <button
+          className="btn text-white  py-0"
+          style={{ cursor: 'pointer', height: '30px' }}
+          onClick={() => followUser(user.id)}
+        >
+          {followMsg}
+        </button>
+      )}
     </div>
   );
 };

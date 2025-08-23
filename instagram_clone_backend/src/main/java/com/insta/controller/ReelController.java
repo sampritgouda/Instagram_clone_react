@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.cloudinary.Cloudinary;
-
+import com.cloudinary.utils.ObjectUtils;
 import com.insta.model.Reel;
 import com.insta.model.User;
 import com.insta.repository.FollowRequestRepository;
@@ -22,7 +22,7 @@ import com.insta.repository.ReelRepository;
 import com.insta.repository.UserRepository;
 import com.insta.security.JwtUtil;
 import com.insta.service.ReelsService;
-
+import com.insta.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,11 +34,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 public class ReelController {
 
+    private final UserService userService;
+
     private final Cloudinary cloudinary;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final ReelRepository reelRepository;
     private final ReelsService reelsService;
+
+
+    
     
 
     @PostMapping("/add")
@@ -48,35 +53,14 @@ public class ReelController {
             @RequestHeader("Authorization") String authHeader
     ) {
         try {
-            // 1. Extract token & get user
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid Authorization header");
-            }
-
-            String token = authHeader.substring(7);
-            String email = jwtUtil.extractUsername(token);
-            User user = userRepository.findByEmail(email).orElse(null);
+           User user = userService.getUserByToken(authHeader);
 
             if (user == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
             }
-
-            // 2. Upload to Cloudinary
-            Map uploadResult = cloudinary.uploader().upload(
-                    mediaFile.getBytes(),
-                    Map.of("resource_type", "video") // handles image/video automatically
-            );
-
-            String url = uploadResult.get("secure_url").toString();
-            String resourceType = uploadResult.get("resource_type").toString();
-
-           Reel reel = new Reel();
-           reel.setCaption(caption);
-           reel.setCreatedAt(LocalDateTime.now());
-           reel.setVideoUrl(url);
-           reel.setUser(user);
-           
-           reelRepository.save(reel);
+            String[] uploadreels = reelsService.uploadreels(mediaFile, caption, user);
+            String resourceType = uploadreels[0];
+            String url = uploadreels[1];
 
             return ResponseEntity.ok(Map.of(
                     "message", "Reel Uploaded successfully",
@@ -104,11 +88,26 @@ public class ReelController {
 	        String token = authHeader.substring(7);
 	        String email = jwtUtil.extractUsername(token);
 	        User currentUser = userRepository.findByEmail(email).orElseThrow();
-	        return reelsService.getAllReels(page, limit, currentUser);
-		
-
-        
-
+	        return reelsService.getAllReels(page, limit, currentUser);   
+ }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteReel(@PathVariable("id")Long id)
+    {
+    	try {
+    		Reel reel = reelRepository.findById(id).orElseThrow();
+        	cloudinary.uploader().destroy(
+                    reel.getReelPublicId(),
+                    ObjectUtils.asMap("resource_type", "video") 
+                );
+        	reelRepository.delete(reel);
+        	return ResponseEntity.ok().build();
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().build();
+		}
+    }
+    {
+    	
     }
 
 

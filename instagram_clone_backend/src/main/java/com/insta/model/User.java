@@ -33,7 +33,9 @@ public class User {
 
     private String profilePicUrl; 
     private String bio;
+    private String profilePicPublicId;
     
+    private String gender;
     @Transient
     private boolean isOwn;
     

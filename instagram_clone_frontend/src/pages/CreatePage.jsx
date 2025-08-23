@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Sidebar from '../components/Sidebar';
 import { useUpload } from '../context/UploadContext'; 
+import SideComponent from '../components/SideComponent';
+import { useParams } from 'react-router-dom';
 
 function CreatePage() {
-  const [activeTab, setActiveTab] = useState('post');
+  const {select} = useParams()
+  const [activeTab, setActiveTab] = useState(select ? select : 'post');
   const [caption, setCaption] = useState('');
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState('');
@@ -79,7 +82,7 @@ console.log(token)
 
   return (
     <div className='d-flex'>
-      <Sidebar/>
+     <SideComponent />
     <div className="container-fluid">
       <div className="row bg-black">
         <div className="col-md-9 col-lg-10 bg-dark text-white min-vh-100 p-4">
@@ -112,7 +115,7 @@ console.log(token)
             </li>
           </ul>
 
-          <div className="card bg-secondary p-4">
+          <div className="card bg-secondary p-4" >
             <form onSubmit={handleSubmit}>
               {(activeTab === 'post' || activeTab === 'reel') && (
                 <div className="mb-3">

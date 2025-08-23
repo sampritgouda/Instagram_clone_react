@@ -4,11 +4,12 @@ import Sidebar from '../components/Sidebar'
 import UserProfileFeed from '../components/UserProfileFeed'
 import { useParams } from 'react-router-dom'
 import UserReel from '../components/UserReel'
+import SideComponent from '../components/SideComponent'
 
 const ProfilePage = () => {
-  const { id } = useParams()
+  const { id,tab } = useParams()
   const [canview, setcanview] = useState(true)
-  const [activeTab, setActiveTab] = useState('post')
+  const [activeTab, setActiveTab] = useState(null)
   const [user, setUser] = useState(null)
    // moved here
 
@@ -28,7 +29,8 @@ const ProfilePage = () => {
 
   useEffect(() => {
     fetchUser()
-  }, [id])
+    setActiveTab(tab || 'post')
+  }, [id,tab])
 
 
  
@@ -48,7 +50,7 @@ const ProfilePage = () => {
 
   return (
     <div className='d-flex'>
-      <Sidebar />
+      <SideComponent />
       <div 
         className="container-fluid p-0 d-flex flex-column overflow-auto bg-black" 
         style={{ maxHeight: '100vh' }}

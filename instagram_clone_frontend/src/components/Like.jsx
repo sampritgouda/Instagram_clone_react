@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 
-const Like = ({ id, type, initialLiked, initialCount }) => {
+const Like = ({ id, type, initialLiked, initialCount, onLikeToggle }) => {
   const [liked, setLiked] = useState(initialLiked || false);
   const [count, setCount] = useState(initialCount || 0);
 
@@ -11,17 +11,23 @@ const Like = ({ id, type, initialLiked, initialCount }) => {
       const token = localStorage.getItem("token");
 
       const res = await fetch(url, {
-        method: liked ? "DELETE" : "POST", // toggle
+        method: liked ? "DELETE" : "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-          body: JSON.stringify({ id,type })
+        body: JSON.stringify({ id, type })
       });
 
       if (res.ok) {
-        setLiked(!liked);
-        setCount(prev => liked ? prev - 1 : prev + 1);
+        const newLiked = !liked;
+        setLiked(newLiked);
+        setCount(prev => newLiked ? prev + 1 : prev - 1);
+
+        // Inform parent Feeds
+        if (onLikeToggle) {
+          onLikeToggle(newLiked);
+        }
       }
     } catch (err) {
       console.error("Error while liking:", err);

@@ -2,11 +2,21 @@ import React, { useRef, useState } from 'react'
 import ProfileHeader from './ProfileHeader'
 import Like from './Like'
 import Save from './Save'
-import { FaComment, FaRegComment, FaShare, FaVolumeMute, FaVolumeUp } from 'react-icons/fa'
+import {  FaRegComment, FaShare, FaVolumeMute, FaVolumeUp } from 'react-icons/fa'
+import Comment from './Comment'
+import { useNavigate } from 'react-router-dom'
 
 const PostPopup = ({feed,onclose,user}) => {
   const [muted, setmuted] = useState(true)
   const videoref = useRef()
+  const [likeCount, setlikeCount] = useState(feed.likeCount)
+console.log(feed)
+  const navigate = useNavigate()
+
+  const navigateprofile = (id) =>{
+    onclose()
+    navigate(`/profile/${id}`)
+  }
   const toglemute = () => setmuted(!muted)
 
   const togglePlayPause = id => {
@@ -51,22 +61,24 @@ const PostPopup = ({feed,onclose,user}) => {
             <div className='d-flex flex-column px-4 py-3 gap-4 text-white bg-dark' style={{width:'28%',height:'80%'}}>
               <div className='d-flex gap-2 align-items-center'>
                   <img src={feed.user.profilePicUrl} style={{width:'40px',height:'40px'}} className='rounded-circle'/>  
-                  <p className='m-0'>{feed.user.username}</p>   
+                  <p className='m-0' style={{fontSize:"15px",fontFamily:"sans-serif",zIndex:99,cursor:"pointer"}}
+                  onClick={()=>navigateprofile(feed.user.id)}>{feed.user.username}</p>   
                   <ProfileHeader user = {user}/>        
                </div>
                {feed.caption && 
                <div className='d-flex gap-3 align-items-center'>
                 <img src={feed.user.profilePicUrl} alt="" style={{width:'40px',height:'40px'}} className='rounded-circle' />
-                <p>{feed.user.username}</p>
-                <p>{feed.caption}</p>
+                <p style={{fontSize:"15px",fontFamily:"sans-serif",zIndex:99,cursor:"pointer"}}
+                onClick={()=>navigateprofile(feed.user.id)}>{feed.user.username}</p>
+                <p style={{fontSize:"16px",fontFamily:"serif"}}>{feed.caption}</p>
                </div>
                }
                <div className='w-100' style={{height:'60%'}}>
-
+                <Comment id={feed.id} type={feed.type} onclose = {()=>onclose()}/>
                </div>
                <div className='d-flex gap-3 align-items-center justify-content-between'>
                 <div className='d-flex gap-3'>
-                <Like id= {feed.id} type={feed.type} initialLiked={feed.liked} initialCount={feed.likeCount}/>
+                <Like id= {feed.id} type={feed.type} initialLiked={feed.liked} initialCount={feed.likeCount} onLikeToggle={(newLike)=>setlikeCount(newLike ? likeCount+1 : likeCount-1)}/>
                 <FaRegComment size={24}/>
                 <FaShare size={24} />
                 </div>
@@ -74,6 +86,7 @@ const PostPopup = ({feed,onclose,user}) => {
                 <Save id={feed.id} type={feed.type} initialSaved={feed.saved}/>
                 </div>
                </div>
+               <p className='mb-0 ps-1' style={{marginTop:"-20px"}}>{likeCount} likes</p>
             </div>
         </div>
     </div>

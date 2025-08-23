@@ -27,10 +27,10 @@ const UserProfileFeed = ({ id ,type ,user}) => {
   }, [id,type]);
 
   return (
-    <div className="container-fluid py-2 bg-black m-0" style={{ paddingLeft: '180px', paddingRight: '180px' }}>
+    <div className="container-fluid py-2 bg-black m-0 feed-popup" >
       <div className="row g-2">
         {posts.map((p) => (
-          <div key={p.id} className="col-4" style={{ height: '350px',cursor:'pointer' }} onClick={()=>setselected(p)}>
+          <div key={p.id} className="col-4 feed-vdo" style={{ cursor:'pointer' }} onClick={()=>setselected(p)}>
             {p.mediaType === "image" ? (
               <img
                 src={p.mediaUrl}

@@ -1,11 +1,24 @@
 import React, { useEffect, useState } from 'react';
+import { FaEye } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import DeleteButton from './DeleteButton';
 
 function Stories() {
+  const navigate = useNavigate()
   const [usersStories, setUsersStories] = useState([]);
   const [storyviewcount, setstoryviewcount] = useState({})
   const [currentUserIndex, setCurrentUserIndex] = useState(null);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(null);
+  const [storySeen, setStorySeen] = useState({});
+
   const token = localStorage.getItem("token");
+
+  
+const navigateUserProfile = (id) =>{
+    navigate(`/profile/${id}`)
+  }
+
+const opencreateStory = () =>navigate('/create/story') 
 
   useEffect(() => {
     fetch("http://localhost:8080/api/stories", {
@@ -15,27 +28,34 @@ function Stories() {
     })
       .then(res => res.json())
       .then(data => {
-        setUsersStories(data);
-        const intialstorycount ={}
-        data.forEach(user =>
-        {
-         if(user)
-          { user.stories.forEach(story =>
-          {
-            if(story)intialstorycount[story.id] = story.seenCount
-          }
-          )
+  setUsersStories(data);
+
+  const initialViewCount = {};
+  const initialSeen = {};
+  data.forEach(user => {
+    if (user) {
+      user.stories.forEach(story => {
+        if (story) {
+          initialViewCount[story.id] = story.seenCount;
+          initialSeen[story.id] = story.seen;  // from backend
         }
-        }
-        )
-        console.log(data)
-      })
+      });
+    }
+  });
+
+  setstoryviewcount(initialViewCount);
+  setStorySeen(initialSeen);
+})
+
       .catch(err => console.error("Error fetching stories:", err));
   }, [token]);
 
-  const markStoryAsSeen = (userIndex,storyIndex) => {
-   const storyId = usersStories[userIndex].stories[storyIndex].id
-   console.log(storyId)
+  const markStoryAsSeen = (userIndex, storyIndex) => {
+  const storyId = usersStories[userIndex].stories[storyIndex].id;
+
+  // Only mark if not already seen
+  if (storySeen[storyId]) return;
+
   fetch(`http://localhost:8080/api/stories/${storyId}/seen`, {
     method: "POST",
     headers: {
@@ -46,7 +66,15 @@ function Stories() {
       if (!res.ok) throw new Error("Failed to mark story as seen");
       console.log(`Story ${storyId} marked as seen`);
 
-      
+      setstoryviewcount(prev => ({
+        ...prev,
+        [storyId]: (prev[storyId] || 0) + 1
+      }));
+
+      setStorySeen(prev => ({
+        ...prev,
+        [storyId]: true
+      }));
     })
     .catch(err => console.error(err));
 };
@@ -105,12 +133,12 @@ function Stories() {
           key={"add-story"}
           className="position-relative d-flex flex-column align-items-center me-3 story-bubble"
           style={{ cursor: "pointer", width: 80, height: 120 }}
-          onClick={() => console.log("Open add story modal")} // Replace with actual add story action
+          onClick={() => opencreateStory()} // Replace with actual add story action
           title="Add Story"
         >
           {/* Circle with plus sign */}
           <div
-            className="rounded-circle bg-secondary d-flex justify-content-center align-items-center"
+            className="rounded-circle bg-dark d-flex justify-content-center align-items-center"
             style={{
               width: 76,
               height: 76,
@@ -206,7 +234,34 @@ function Stories() {
 
             <div className='d-flex align-items-center gap-3 w-100'>
               <img className='rounded-circle' style={{width:'40px',height:'40px'}} src={usersStories[currentUserIndex].profileImage}/>
-              <h5 className="text-white mb-3">{usersStories[currentUserIndex].username}</h5>
+              <h5 style={{cursor:"pointer",fontFamily:"serif"}} className="text-white m-0" onClick={()=>navigateUserProfile(usersStories[currentUserIndex].userId)}>
+                {usersStories[currentUserIndex].username}</h5>
+              <div className='d-flex ms-4 align-items-center gap-1'>
+                <FaEye color="white" />
+              <span className="text-white" style={{fontSize:"12px"}}>
+                {storyviewcount[usersStories[currentUserIndex].stories[currentStoryIndex].id] || 0}
+              </span>
+              </div>
+              {console.log(usersStories[currentUserIndex].own)}
+              {usersStories[currentUserIndex].own && (
+              <DeleteButton
+                id={usersStories[currentUserIndex].stories[currentStoryIndex].id}
+                type="stories"   // backend endpoint: /api/stories/{id}
+                token={token}
+                onDelete={() => {
+                  // update UI after successful delete
+                  setUsersStories(prev => {
+                    const updated = [...prev];
+                    updated[currentUserIndex].stories = updated[currentUserIndex].stories.filter(
+                      s => s.id !== usersStories[currentUserIndex].stories[currentStoryIndex].id
+                    );
+                    return updated;
+                  });
+                  closeStory(); // close modal
+                }}
+              />
+            )}
+
             </div>
 
             {usersStories[currentUserIndex].stories[currentStoryIndex].mediaType === "image" ? (
@@ -215,11 +270,12 @@ function Stories() {
                 alt="Story"
                 style={{ maxWidth: "100%", maxHeight: "80vh", borderRadius: "10px" }}
                 onLoad={() => {
-      if (!usersStories[currentUserIndex].stories[currentStoryIndex].seen) {
-        markStoryAsSeen(currentUserIndex, currentStoryIndex);
-      }
-    }
-          }
+                  const storyId = usersStories[currentUserIndex].stories[currentStoryIndex].id;
+                  if (!storySeen[storyId]) {
+                    markStoryAsSeen(currentUserIndex, currentStoryIndex);
+                  }
+                }}
+
               />
             ) : (
               <video
@@ -227,12 +283,13 @@ function Stories() {
                 autoPlay
                 loop
                 style={{ maxWidth: "100%", maxHeight: "80vh", borderRadius: "10px" }}
-                onLoadedData={() => {
-      if (!usersStories[currentUserIndex].stories[currentStoryIndex].seen) {
-        markStoryAsSeen(currentUserIndex, currentStoryIndex);
-      }
-    }
-          }
+               onLoadedData={() => {
+                const storyId = usersStories[currentUserIndex].stories[currentStoryIndex].id;
+                if (!storySeen[storyId]) {
+                  markStoryAsSeen(currentUserIndex, currentStoryIndex);
+                }
+              }}
+
               />
             )}
 

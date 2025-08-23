@@ -6,16 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
-public class Followresponce {
+public class CommentDTO {
 
 	private Long id;
 	private String username;
-	private String profileurl;
-	private boolean isFollowed;
-	private boolean isRequested;
-	private boolean isPrivate;
-	private boolean own;
+	private Long userId;
+	private String text;
+	private String userprofile;
 }

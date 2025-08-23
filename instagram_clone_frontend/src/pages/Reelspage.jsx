@@ -8,12 +8,23 @@ import {
   FaRegBookmark,
   FaRegComment,
   FaVolumeMute,
-  FaVolumeUp
+  FaVolumeUp,
+  FaDownload
 } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import ProfileHeader from '../components/ProfileHeader';
-
+import { useNavigate } from 'react-router-dom';
+import Like from '../components/Like';
+import Save from '../components/Save';
+import SideComponent from '../components/SideComponent';
+import Comment from '../components/Comment';
+import { Share2 } from 'lucide-react';
+import DownloadButton from '../components/DownloadButton';
+import { BiDotsVerticalRounded } from 'react-icons/bi';
+import MorePopup from '../components/MorePopup';
 function ReelsPage() {
+const navigate = useNavigate()
+
   const [reels, setReels] = useState([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -24,11 +35,17 @@ function ReelsPage() {
   const [saved, setSaved] = useState({});
   const [saveCount, setsaveCount] = useState({});
   const [muted, setMuted] = useState({});
+  const [viewComment, setviewComment] = useState(false)
+  const [selectedReel, setselectedReel] = useState(null)
+  const [viewmore, setviewmore] = useState(false)
   const videoRefs = useRef({});
   const containerRef = useRef(null); // reference to the scrollable div
 
   const token = localStorage.getItem("token");
   const limit = 2; // reels per page
+  const navigateUserProfile = (id) =>{
+    navigate(`/profile/${id}`)
+  }
 
   // Fetch reels for a specific page
   const fetchReels = async (pageNum) => {
@@ -87,9 +104,9 @@ function ReelsPage() {
       const bottomReached =
         scrollContainer.scrollTop + scrollContainer.clientHeight >=
         scrollContainer.scrollHeight - 100; // 100px before bottom
-      console.log(bottomReached)
-      console.log(!loading)
-      console.log(hasMore)
+      setviewComment(false)
+      setselectedReel(null)
+      setviewmore(false)
 
       if (bottomReached && !loading && hasMore) {
          const nextPage = page + 1;
@@ -101,6 +118,7 @@ function ReelsPage() {
 
     scrollContainer.addEventListener("scroll", handleScroll);
     return () => {
+      
       scrollContainer.removeEventListener("scroll", handleScroll);
     };
   }, [page,loading,hasMore]);
@@ -131,75 +149,6 @@ function ReelsPage() {
     return () => observer.disconnect();
   }, [reels]);
 
-  const toggleLike = async (id) => {
-    const type='reel'
-    const isLiked = likes[id];
-    const url = `http://localhost:8080/api/like`;
-
-    try {
-      let resp;
-      if (!isLiked) {
-        resp = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ id,type })
-        });
-      } else {
-        resp = await fetch(url, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ id,type })
-        });
-      }
-      if (resp.ok) {
-        setLikes(prev => ({ ...prev, [id]: !prev[id] }));
-        setlikecount(pre => ({ ...pre, [id]: likes[id] ? pre[id] - 1 : pre[id] + 1 }));
-      }
-    } catch (err) {
-      console.error("Error toggling like:", err);
-    }
-  };
-
-  const toggleSave = async (id) => {
-    const type ='reel'
-    const isSaved = saved[id];
-    const url = `http://localhost:8080/api/save`;
-
-    try {
-      let resp;
-      if (!isSaved) {
-        resp = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ id,type })
-        });
-      } else {
-        resp = await fetch(url, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ id ,type})
-        });
-      }
-      if (resp.ok) {
-        setSaved(prev => ({ ...prev, [id]: !prev[id] }));
-        setsaveCount(pre => ({ ...pre, [id]: saved[id] ? pre[id] - 1 : pre[id] + 1 }));
-      }
-    } catch (err) {
-      console.error("Error toggling save:", err);
-    }
-  };
 
   const toggleMute = (id) => {
     setMuted(prev => ({ ...prev, [id]: !prev[id] }));
@@ -215,13 +164,13 @@ function ReelsPage() {
 
   return (
     <div className="d-flex" style={{ height: "100vh" }}>
-      <Sidebar />
-      <div className="container-fluid bg-black text-white">
+      <SideComponent />
+      <div className="container-fluid bg-black text-white ">
         <h3 className="">Reels</h3>
 
         <div
         ref={containerRef}
-          className="d-flex flex-column align-items-center gap-5 p-5"
+         className="d-flex flex-column align-items-center gap-5 p-0 p-md-5 col-p-0"
           style={{
             overflowY: "auto",
             maxHeight: "90vh",
@@ -233,7 +182,7 @@ function ReelsPage() {
           {reels.map(reel => (
             <div
               key={reel.id}
-              className="border-0 d-flex align-items-center gap-3"
+              className="border-0 d-flex align-items-center col-12"
               style={{
                 position: "relative",
                 maxWidth: '400px',
@@ -243,7 +192,7 @@ function ReelsPage() {
               }}
             >
               {/* Video */}
-              <div className='p-3' style={{ width: "80%", height: "100%" }}>
+              <div className='p-3' style={{ width: "100%", height: "100%" }}>
                 <video
                   ref={el => (videoRefs.current[reel.id] = el)}
                   className="w-100"
@@ -272,39 +221,41 @@ function ReelsPage() {
               </div>
 
               {/* Actions */}
-              <div className="d-flex flex-column justify-content-end pb-5 gap-4 " style={{ fontFamily: "-moz-initial",marginTop:'150px' }}>
-                <span
-                  className='d-flex flex-column align-items-center'
-                  onClick={() => toggleLike(reel.id)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {likes[reel.id] ? (
-                    <FaHeart color="red" size={24} />
-                  ) : (
-                    <FaRegHeart size={22} />
-                  )}
-                  <p className='text-white mb-0'>{likecount[reel.id]}</p>
-                </span>
-                <span style={{ cursor: 'pointer' }}>
+              <div className="d-flex flex-column justify-content-end pb-5 reel-actions" style={{ fontFamily: "-moz-initial",marginTop:'150px' }}>
+                <span className='d-flex flex-column align-items-center'>
+                <Like 
+                  id={reel.id} 
+                  type="reel" 
+                  initialLiked={likes[reel.id]} 
+                  onLikeToggle={(newLiked) => {
+                    setLikes(prev => ({ ...prev, [reel.id]: newLiked }));
+                    setlikecount(prev => ({
+                      ...prev,
+                      [reel.id]: newLiked ? prev[reel.id] + 1 : prev[reel.id] - 1
+                    }));
+                  }}
+                />
+                <p className='text-white mb-0'>{likecount[reel.id]}</p>
+              </span>
+
+                <span style={{ cursor: 'pointer' }} onClick={()=>{
+                  setviewComment(!viewComment)
+                  setselectedReel(reel)
+                }} className="absolute bottom-1 right-5 bg-black/60 p-3 rounded-full text-white">
                   <FaRegComment size={22} />
                 </span>
-                <span style={{ cursor: 'pointer' }}>
-                  <FaShare size={22} />
-                </span>
-
-                <span
-                  className='d-flex flex-column align-items-center'
-                  onClick={() => toggleSave(reel.id)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {saved[reel.id] ? (
-                    <FaBookmark size={22} />
-                  ) : (
-                    <FaRegBookmark size={22} />
-                  )}
-                  <p className='text-white mb-0'>{saveCount[reel.id]}</p>
-                </span>
-                <span className='text-center' style={{ fontSize: "25px" }}>...</span>
+                <div className="absolute bottom-1 right-5 bg-black/60 p-3 rounded-full text-white">
+                  <Share2 size={22} />
+               </div>
+                <div className="absolute bottom-1 right-5 bg-black/60 p-3 rounded-full text-white">
+                <Save id={reel.id} type={'reel'} initialSaved={saved[reel.id]}/>
+                </div>
+                <DownloadButton videourl={reel.videoUrl} id={reel.id}/>
+                <button className='btn text-white'
+                          onClick={()=>{
+                            setselectedReel(reel)
+                            setviewmore(!viewmore)
+                          }}><BiDotsVerticalRounded size={24} /></button>
               </div>
 
               {/* User Info */}
@@ -321,7 +272,8 @@ function ReelsPage() {
                   src={reel.user.profilePicUrl}
                   style={{ width: "40px", height: "40px" }}
                 />
-                <span>{reel.user.username}</span>
+                <span onClick={()=>navigateUserProfile(reel.user.id)}
+                  style={{cursor:"pointer"}}>{reel.user.username}</span>
                 <ProfileHeader user={reel.user} />
               </div>
             </div>
@@ -331,6 +283,17 @@ function ReelsPage() {
           {!hasMore && <p>No more reels</p>}
         </div>
       </div>
+      {viewComment && <div className='position-absolute h-50 p-2 bg-dark d-flex justify-content-center align-items-center'
+       style={{top:"20%",right:"2%",width:"25%"}}>
+        <Comment id={selectedReel.id} type={'reel'} /></div>}
+        {viewmore && <div className='position-absolute rounded p-2 bg-dark d-flex justify-content-center align-items-center'
+           style={{bottom:"30%",right:"15%",width:"15%"}}>
+          <MorePopup id={selectedReel.id} token={token} type={'reels'} user={selectedReel.user} 
+          close={()=>{
+            setviewmore(false)
+            setselectedReel(null)
+          }}/>
+          </div>}
     </div>
   );
 }

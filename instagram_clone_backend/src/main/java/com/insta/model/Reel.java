@@ -20,13 +20,15 @@ public class Reel {
 
     @ManyToOne(fetch = FetchType.LAZY) // Many reels belong to one user
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnoreProperties("reels")
+    @JsonIgnoreProperties({"reels","comments"})
+   
     private User user;
 
     private String videoUrl; // Cloudinary video URL
     private String caption;
     private LocalDateTime createdAt;
 
+    private String reelPublicId;
     // Likes for this reel
     @OneToMany(mappedBy = "reel", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
@@ -38,6 +40,7 @@ public class Reel {
 
     // Comments for this reel
     @OneToMany(mappedBy = "reel", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Comment> comments;
     
     @Transient

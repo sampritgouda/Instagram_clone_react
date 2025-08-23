@@ -3,6 +3,11 @@ import { FaBookmark,  FaHeart, FaRegBookmark, FaRegComment, FaRegHeart, FaShare,
 import { FaShareNodes } from 'react-icons/fa6';
 import { useNavigate } from 'react-router-dom';
 import ProfileHeader from './ProfileHeader';
+import Like from './Like';
+import Save from './Save';
+import Comment from './Comment';
+import { BiDotsVerticalRounded } from 'react-icons/bi';
+import MorePopup from './MorePopup';
 
 function Feeds({scrollcontainerref}) {
   const [feedData, setFeedData] = useState([]);
@@ -18,6 +23,9 @@ function Feeds({scrollcontainerref}) {
   const [likes, setlikes] = useState({})
   const [likecount, setlikecount] = useState({})
   const [saved, setsaved] = useState({})
+  const [viewcomment, setviewcomment] = useState(false)
+  const [selectedPost, setselectedPost] = useState(null)
+  const [viewMore, setviewMore] = useState(false)
 
   const navigateUserProfile = (id) =>{
     navigate(`/profile/${id}`)
@@ -98,9 +106,9 @@ function Feeds({scrollcontainerref}) {
         const bottomReached =
           scrollContainer.scrollTop + scrollContainer.clientHeight >=
           scrollContainer.scrollHeight - 100; // 100px before bottom
-        console.log(bottomReached)
-        console.log(!loading)
-        console.log(hasMore)
+        setviewcomment(false)
+        setselectedPost(null)
+        setviewMore(false)
   
         if (bottomReached && !loading && hasMore) {
            const nextPage = page + 1;
@@ -143,77 +151,7 @@ function Feeds({scrollcontainerref}) {
   };
 
 
-
   
-  const toggleLike = async (id) => {
-    const isLiked = likes[id];
-    const type ='post'
-    const url = `http://localhost:8080/api/like`;
-
-    try {
-      let resp;
-      if (!isLiked) {
-        resp = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ id ,type })
-        });
-      } else {
-        resp = await fetch(url, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ id,type })
-        });
-      }
-      if (resp.ok) {
-        setlikes(prev => ({ ...prev, [id]: !prev[id] }));
-        setlikecount(pre => ({ ...pre, [id]: likes[id] ? pre[id] - 1 : pre[id] + 1 }));
-      }
-    } catch (err) {
-      console.error("Error toggling like:", err);
-    }
-  };
-
-  const toggleSave = async (id) => {
-    const type='post'
-    const isSaved = saved[id];
-    const url = `http://localhost:8080/api/save`;
-
-    try {
-      let resp;
-      if (!isSaved) {
-        resp = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ id ,type})
-        });
-      } else {
-        resp = await fetch(url, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ id,type })
-        });
-      }
-      if (resp.ok) {
-        setsaved(prev => ({ ...prev, [id]: !prev[id] }));
-        
-      }
-    } catch (err) {
-      console.error("Error toggling save:", err);
-    }
-  };
 
   return (
     <div>
@@ -234,6 +172,11 @@ function Feeds({scrollcontainerref}) {
           {feed.user?.username}
         </strong>
           <ProfileHeader user = {feed.user}/>
+          <button className='btn text-white ms-auto'
+          onClick={()=>{
+            setselectedPost(feed)
+            setviewMore(!viewMore)
+          }}><BiDotsVerticalRounded size={24} /></button>
           </div>
 
           {feed.mediaType === "image" ? (
@@ -276,15 +219,25 @@ function Feeds({scrollcontainerref}) {
               
               {/* Left icons */}
               <div className="d-flex gap-3">
-                <span onClick={() => toggleLike(feed.id)} style={{ cursor: 'pointer' }}>
-                  {likes[feed.id] ? (
-                    <FaHeart color="red" size={24} />
-                  ) : (
-                    <FaRegHeart size={22} />
-                  )}
-                </span>
+                
+                <Like 
+                    id={feed.id} 
+                    type={'post'} 
+                    initialLiked={likes[feed.id]} 
+                    initialCount={likecount[feed.id]} 
+                    onLikeToggle={(newLiked) => {
+                      setlikes(prev => ({ ...prev, [feed.id]: newLiked }));
+                      setlikecount(prev => ({
+                        ...prev,
+                        [feed.id]: prev[feed.id] + (newLiked ? 1 : -1)
+                      }));
+                    }}
+                  />
 
-                <span style={{ cursor: 'pointer' }}>
+                <span style={{ cursor: 'pointer' }} onClick={()=>{
+                  setviewcomment(!viewcomment)
+                  setselectedPost(feed.id)
+                }}>
                   <FaRegComment size={22} />
                 </span>
 
@@ -294,13 +247,7 @@ function Feeds({scrollcontainerref}) {
               </div>
 
               {/* Right icon */}
-              <span onClick={() => toggleSave(feed.id)} style={{ cursor: 'pointer' }}>
-                {saved[feed.id] ? (
-                  <FaBookmark size={22} />
-                ) : (
-                  <FaRegBookmark size={22} />
-                )}
-              </span>
+              <Save id={feed.id} type={'post'} initialSaved={saved[feed.id]}/>
 
             </div>
 
@@ -310,8 +257,19 @@ function Feeds({scrollcontainerref}) {
           </div>
         </div>
       ))}
-      {loading && <p className='text-white'>Loading more reels...</p>}
-       {!hasMore && <p className='text-white'>No more reels</p>}
+      {loading && <p className='text-white text-center'>Loading more reels...</p>}
+       {!hasMore && <p className='text-white text-center'>No more reels</p>}
+       {viewcomment && <div className='position-absolute h-50 p-2 bg-dark d-flex justify-content-center align-items-center'
+       style={{top:"18%",right:"10%",width:"25%"}}>
+        <Comment id={selectedPost} type={'post'} /></div>}
+
+        {viewMore && <div className='position-absolute p-2 bg-dark d-flex justify-content-center align-items-center'
+           style={{top:"18%",right:"20%",width:"15%"}}>
+          <MorePopup id={selectedPost.id} token={token} type={'posts'} user={selectedPost.user} close={()=>{
+            setviewMore(false)
+            setselectedPost(null)
+          }}/>
+          </div>}
     </div>
   );
 }
