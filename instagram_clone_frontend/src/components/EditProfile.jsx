@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useUser } from '../context/UserContext';
+import { API_BASE_URL } from '../config';
 const EditProfile = () => {
   const fileInputRef = useRef(null);
   const [user, setUser] = useState(null);
@@ -13,7 +14,7 @@ const EditProfile = () => {
     const fetchProfile = async () => {
       try {
         console.log(token)
-        const resp = await fetch("http://localhost:8080/api/profile/edit", {
+        const resp = await fetch(`${API_BASE_URL}/api/profile/edit`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -43,7 +44,7 @@ const EditProfile = () => {
 
     try {
 
-      const resp = await fetch("http://localhost:8080/api/profile/image", {
+      const resp = await fetch(`${API_BASE_URL}/api/profile/image`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -68,7 +69,7 @@ const EditProfile = () => {
     e.preventDefault();
     try {
 
-      const resp = await fetch("http://localhost:8080/api/profile/update", {
+      const resp = await fetch(`${API_BASE_URL}/api/profile/update`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

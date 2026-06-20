@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL } from '../config';
 
 const ProfileHeader = ({ user }) => {
   const [following, setFollowing] = useState(false);
@@ -13,7 +14,7 @@ const ProfileHeader = ({ user }) => {
 
       if (!following && !requested) {
         // Not following → send follow request
-        resp = await fetch(`http://localhost:8080/api/user/follow`, {
+        resp = await fetch(`${API_BASE_URL}/api/user/follow`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -23,7 +24,7 @@ const ProfileHeader = ({ user }) => {
         });
       } else {
         // Already following or requested → unfollow/cancel request
-        resp = await fetch(`http://localhost:8080/api/user/follow`, {
+        resp = await fetch(`${API_BASE_URL}/api/user/follow`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`,

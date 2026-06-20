@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { FaTrash } from "react-icons/fa";
+import { API_BASE_URL } from "../config";
 
 function DeleteButton({ id, type, onDelete, token }) {
   const [loading, setLoading] = useState(false);
@@ -10,7 +11,7 @@ function DeleteButton({ id, type, onDelete, token }) {
     setLoading(true);
     try {
      console.log(id)
-      const res = await fetch(`http://localhost:8080/api/${type}/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/${type}/${id}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`

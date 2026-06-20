@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import PostPopup from './PostPopup';
+import { API_BASE_URL } from '../config';
 
 const UserProfileFeed = ({ id ,type ,user}) => {
   const token = localStorage.getItem("token");
@@ -8,7 +9,7 @@ const UserProfileFeed = ({ id ,type ,user}) => {
   
   const fetchPosts = async () => {
     try {
-      const resp = await fetch(`http://localhost:8080/api/profile/${type}?id=${id}`, {
+      const resp = await fetch(`${API_BASE_URL}/api/profile/${type}?id=${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 

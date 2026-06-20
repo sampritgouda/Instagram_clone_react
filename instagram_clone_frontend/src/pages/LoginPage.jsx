@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import { API_BASE_URL } from '../config';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -15,7 +16,7 @@ const { setProfileImage } = useUser();
     e.preventDefault();
 
     try {
-      const resp = await fetch('http://localhost:8080/api/auth/login', {
+      const resp = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

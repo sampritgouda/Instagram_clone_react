@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import { useUpload } from '../context/UploadContext'; 
 import SideComponent from '../components/SideComponent';
 import { useParams } from 'react-router-dom';
+import { API_BASE_URL } from '../config';
 
 function CreatePage() {
   const {select} = useParams()
@@ -51,7 +52,7 @@ console.log(token)
     console.log(endpoint)
 
     setUploadStatus(`Uploading ${activeTab}...`);
-      const response = await fetch(`http://localhost:8080${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
          headers: {
     'Authorization': `Bearer ${token}` // 🔐 Attach JWT token here

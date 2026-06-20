@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { API_BASE_URL } from '../config'
 
 const Comment = ({id,type,onclose}) => {
     const [commentvalue, setcommentvalue] = useState("")
@@ -12,7 +13,7 @@ const navigateprofile = (id) =>{
     navigate(`/profile/${id}`)
 }
     const getComments = async()=>{
-        const resp = await fetch(`http://localhost:8080/api/comment/${id}/${type}`,
+        const resp = await fetch(`${API_BASE_URL}/api/comment/${id}/${type}`,
             {
                 headers : {"Authorization" : `Bearer ${token}`}
             }
@@ -27,7 +28,7 @@ const sendComment = async () => {
   if (commentvalue.trim() === "") return;
 
   try {
-    const resp = await fetch("http://localhost:8080/api/comment/add", {
+    const resp = await fetch(`${API_BASE_URL}/api/comment/add`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token}`,

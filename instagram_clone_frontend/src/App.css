@@ -1,7 +1,5 @@
 /* App.css */
-html{
-  background-color: black;
-}
+
 @media (min-width: 768px) {
   .w-md-50 {
     width: 50% !important;
@@ -25,6 +23,9 @@ html{
 
 
 @media (max-width: 768px) {
+  html{
+  background-color: black;
+}
   .reel-actions {
     position: absolute !important;
     right: 0%;

@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { FaBookmark, FaRegBookmark } from "react-icons/fa";
+import { API_BASE_URL } from "../config";
 
 const Save = ({ id, type, initialSaved }) => {
   const [saved, setSaved] = useState(initialSaved || false);
 
   const handleSave = async () => {
     try {
-      const url = `http://localhost:8080/api/save`;
+      const url = `${API_BASE_URL}/api/save`;
       const token = localStorage.getItem("token");
 
       const res = await fetch(url, {

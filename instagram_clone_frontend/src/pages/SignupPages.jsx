@@ -1,20 +1,21 @@
-      import React, { useState } from "react";
-      import "bootstrap/dist/css/bootstrap.min.css";
-      import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
+import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config";
 
-      function SignupPage() {
-        const [name, setName] = useState("");
-        const [email, setEmail] = useState("");
-        const [password, setPassword] = useState("");
-        const [message, setMessage] = useState("");
-        const navigate=useNavigate()
+function SignupPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const navigate=useNavigate()
 
-        const handleSignup = async (e) => {
-          e.preventDefault();
+  const handleSignup = async (e) => {
+    e.preventDefault();
 
-          console.log(name)
-          try {
-            const response = await fetch("http://localhost:8080/api/auth/register", {
+    console.log(name)
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ "username" :name, email, password }),

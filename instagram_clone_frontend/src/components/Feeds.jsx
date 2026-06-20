@@ -8,6 +8,7 @@ import Save from './Save';
 import Comment from './Comment';
 import { BiDotsVerticalRounded } from 'react-icons/bi';
 import MorePopup from './MorePopup';
+import { API_BASE_URL } from '../config';
 
 function Feeds({scrollcontainerref}) {
   const [feedData, setFeedData] = useState([]);
@@ -36,7 +37,7 @@ function Feeds({scrollcontainerref}) {
 
     setloading(true);
   
-    fetch(`http://localhost:8080/api/posts?page=${pageNum}&limit=${limit}`, {
+    fetch(`${API_BASE_URL}/api/posts?page=${pageNum}&limit=${limit}`, {
       headers: {
         "Authorization": `Bearer ${token}`
       }

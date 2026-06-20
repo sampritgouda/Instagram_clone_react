@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
+import { API_BASE_URL } from "../config";
 
 const Like = ({ id, type, initialLiked, initialCount, onLikeToggle }) => {
   const [liked, setLiked] = useState(initialLiked || false);
@@ -7,7 +8,7 @@ const Like = ({ id, type, initialLiked, initialCount, onLikeToggle }) => {
 
   const handleLike = async () => {
     try {
-      const url = `http://localhost:8080/api/like`; 
+      const url = `${API_BASE_URL}/api/like`; 
       const token = localStorage.getItem("token");
 
       const res = await fetch(url, {

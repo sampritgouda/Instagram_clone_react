@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { FaTimes, FaTimesCircle } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
+import { API_BASE_URL } from '../config'
 
 const Search = ({onclose}) => {
     const navigate = useNavigate()
@@ -15,7 +16,7 @@ const Search = ({onclose}) => {
     }
 
     const fetchSearch = async() =>{
-        const resp = await fetch(`http://localhost:8080/api/search/${searchVal.trim()}`,{
+        const resp = await fetch(`${API_BASE_URL}/api/search/${searchVal.trim()}`,{
           headers : {'Authorization' : `Bearer ${token}`}
 
         })

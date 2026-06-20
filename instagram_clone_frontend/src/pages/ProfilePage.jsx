@@ -5,6 +5,7 @@ import UserProfileFeed from '../components/UserProfileFeed'
 import { useParams } from 'react-router-dom'
 import UserReel from '../components/UserReel'
 import SideComponent from '../components/SideComponent'
+import { API_BASE_URL } from '../config'
 
 const ProfilePage = () => {
   const { id,tab } = useParams()
@@ -17,7 +18,7 @@ const ProfilePage = () => {
 
   const fetchUser = async () => {
     try {
-      const resp = await fetch(`http://localhost:8080/api/profile/user?userId=${id}`, {
+      const resp = await fetch(`${API_BASE_URL}/api/profile/user?userId=${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       const data = await resp.json()

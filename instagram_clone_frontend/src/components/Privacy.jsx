@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { API_BASE_URL } from "../config";
 
 const Privacy = () => {
   const [isPrivate, setIsPrivate] = useState(false);
@@ -8,7 +9,7 @@ const Privacy = () => {
     const fetchPrivacy = async () => {
       try {
         const token = localStorage.getItem("token");
-        const resp = await fetch("http://localhost:8080/api/profile/privacy", {
+        const resp = await fetch(`${API_BASE_URL}/api/profile/privacy`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -31,7 +32,7 @@ const Privacy = () => {
 
     try {
       const token = localStorage.getItem("token");
-      await fetch("http://localhost:8080/api/profile/privacy", {
+      await fetch(`${API_BASE_URL}/api/profile/privacy`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -22,6 +22,7 @@ import { Share2 } from 'lucide-react';
 import DownloadButton from '../components/DownloadButton';
 import { BiDotsVerticalRounded } from 'react-icons/bi';
 import MorePopup from '../components/MorePopup';
+import { API_BASE_URL } from '../config';
 function ReelsPage() {
 const navigate = useNavigate()
 
@@ -53,7 +54,7 @@ const navigate = useNavigate()
 
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/reels?page=${pageNum}&limit=${limit}`, {
+      const res = await fetch(`${API_BASE_URL}/api/reels?page=${pageNum}&limit=${limit}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();

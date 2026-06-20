@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { API_BASE_URL } from "../config";
 
 const PersonalDetails = () => {
   const [username, setUsername] = useState("");
@@ -29,7 +30,7 @@ const PersonalDetails = () => {
       try {
         const token = localStorage.getItem("token");
         const resp = await fetch(
-          "http://localhost:8080/api/profile/setting/details",
+          `${API_BASE_URL}/api/profile/setting/details`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (resp.ok) {
@@ -48,7 +49,7 @@ const PersonalDetails = () => {
     try {
       const token = localStorage.getItem("token");
       const resp = await fetch(
-        "http://localhost:8080/api/profile/setting/details",
+        `${API_BASE_URL}/api/profile/setting/details`,
         {
           method: "PUT",
           headers: {
@@ -81,7 +82,7 @@ const PersonalDetails = () => {
     try {
       const token = localStorage.getItem("token");
       const resp = await fetch(
-        "http://localhost:8080/api/profile/setting/change-password",
+        `${API_BASE_URL}/api/profile/setting/change-password`,
         {
           method: "PUT",
           headers: {

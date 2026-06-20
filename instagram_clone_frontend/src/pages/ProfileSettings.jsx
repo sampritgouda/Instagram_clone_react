@@ -5,6 +5,7 @@ import EditProfile from '../components/EditProfile'
 import Privacy from '../components/Privacy'
 import ChangePassword from '../components/PersonalDetails'
 import PersonalDetails from '../components/PersonalDetails'
+import { API_BASE_URL } from '../config'
 
 const ProfileSettings = () => {
     const token = localStorage.getItem("token")
@@ -14,7 +15,7 @@ const ProfileSettings = () => {
 
    const fetchUser = async () => {
        try {
-         const resp = await fetch(`http://localhost:8080/api/profile/user?userId=${id}`, {
+         const resp = await fetch(`${API_BASE_URL}/api/profile/user?userId=${id}`, {
            headers: { 'Authorization': `Bearer ${token}` }
          })
          const data = await resp.json()

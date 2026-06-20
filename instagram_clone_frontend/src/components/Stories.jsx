@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FaEye } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import DeleteButton from './DeleteButton';
+import { API_BASE_URL } from '../config';
 
 function Stories() {
   const navigate = useNavigate()
@@ -21,7 +22,7 @@ const navigateUserProfile = (id) =>{
 const opencreateStory = () =>navigate('/create/story') 
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/stories", {
+    fetch(`${API_BASE_URL}/api/stories`, {
       headers: {
         "Authorization": `Bearer ${token}`
       }
@@ -56,7 +57,7 @@ const opencreateStory = () =>navigate('/create/story')
   // Only mark if not already seen
   if (storySeen[storyId]) return;
 
-  fetch(`http://localhost:8080/api/stories/${storyId}/seen`, {
+  fetch(`${API_BASE_URL}/api/stories/${storyId}/seen`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token}`

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import ProfileHeader from './ProfileHeader'
+import { API_BASE_URL } from '../config'
 
 const Notification = ({onBack}) => {
  
@@ -7,7 +8,7 @@ const Notification = ({onBack}) => {
     const [isRequested, setisRequested] = useState({})
     const token  = localStorage.getItem("token")
 const fetchNotification = async() =>{
-    const resp = await fetch('http://localhost:8080/api/user/allnotifications',{
+    const resp = await fetch(`${API_BASE_URL}/api/user/allnotifications`,{
         headers : {"Authorization" : `Bearer ${token}`}
     })
     const data = await resp.json()
@@ -21,7 +22,7 @@ const fetchNotification = async() =>{
 }
 
 const ConfirmRequest =async(isConfirm,id) =>{
-  const resp = await fetch(`http://localhost:8080/api/user/confirm`,{
+  const resp = await fetch(`${API_BASE_URL}/api/user/confirm`,{
     method:'POST',
     headers : {"Authorization" : `Bearer ${token}`,
               'Content-Type': 'application/json',

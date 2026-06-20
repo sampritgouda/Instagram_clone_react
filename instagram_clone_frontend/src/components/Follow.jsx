@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import ProfileHeader from './ProfileHeader'
 import { useNavigate } from 'react-router-dom'
+import { API_BASE_URL } from '../config'
 
 const Follow = ({onClose,type,userId}) => {
     const navigate = useNavigate()
@@ -15,7 +16,7 @@ const Follow = ({onClose,type,userId}) => {
 
     console.log(type)
 const fetchData = async()=>{
-    const  url = type === 'follower' ? 'http://localhost:8080/api/user/follower' :'http://localhost:8080/api/user/following'
+    const  url = type === 'follower' ? `${API_BASE_URL}/api/user/follower` :`${API_BASE_URL}/api/user/following`
     const resp = await fetch(url,{
         method:'POST',
         headers: {"Authorization": `Bearer ${token}`,
