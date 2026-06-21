@@ -47,7 +47,8 @@ public class AuthController {
         user.setIsPrivate(false);
         user.setProfilePicUrl("https://res.cloudinary.com/dr0yboilf/image/upload/v1754637397/i721vyva5s2broewwwss.jpg");
         userRepository.save(user);
-        return ResponseEntity.ok("Registered");
+        String token = jwtUtil.generateToken(user.getEmail());
+        return ResponseEntity.ok(new AuthResponse(token, user.getProfilePicUrl(), user.getId()));
     }
 
     @PostMapping("/login")
