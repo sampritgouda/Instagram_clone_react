@@ -61,7 +61,8 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.asList(
             "http://localhost:5173",
-            "https://instagram-clone-react.onrender.com"
+            "https://instagram-clone-react.onrender.com",
+            "https://instagram-clone-react-1.onrender.com"
         ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
