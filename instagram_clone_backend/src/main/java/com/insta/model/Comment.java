@@ -1,6 +1,5 @@
 package com.insta.model;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,7 +13,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @AllArgsConstructor
 @Table(name = "comments")
 public class Comment {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY) // Many comments belong to one user
@@ -33,6 +33,14 @@ public class Comment {
     @JsonIgnore
     private Reel reel;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "replied_to_id")
+    @JsonIgnore
+    private Comment repliedTo;
+
     private String text;
+    private String audioUrl;
+    private String audioPublicId;
+    private Boolean isVoice;
     private LocalDateTime createdAt;
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useToast } from '../context/ToastContext';
 import { API_BASE_URL } from '../config';
 
 const ProfileHeader = ({ user }) => {
@@ -7,6 +8,7 @@ const ProfileHeader = ({ user }) => {
   const [followMsg, setFollowMsg] = useState('follow');
 
   const token = localStorage.getItem('token');
+  const { addToast } = useToast();
 
   const followUser = async (id) => {
     try {
@@ -38,17 +40,21 @@ const ProfileHeader = ({ user }) => {
         if (!following && !requested) {
           if (user.private) {
             setRequested(true);  // private profile → request sent
+            addToast(`Follow request sent to @${user.username}`, 'success');
           } else {
             setFollowing(true);  // public profile → follow directly
+            addToast(`Now following @${user.username}`, 'success');
           }
         } else {
-
           setFollowing(false);
           setRequested(false);
+          addToast(`Unfollowed @${user.username}`, 'info');
         }
+      } else {
+        addToast('Failed to process follow request', 'error');
       }
     } catch (err) {
-      console.error("Follow/unfollow error:", err);
+      addToast('Failed to process request due to a network error', 'error');
     }
   };
 

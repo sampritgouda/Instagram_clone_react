@@ -16,4 +16,12 @@ public class CommentDTO {
 	private Long userId;
 	private String text;
 	private String userprofile;
+	private String audioUrl;
+	private Boolean isVoice;
+	// Reply information
+	private Long repliedToId;
+	private Long repliedToUserId;
+	private String repliedToUsername;
+	private String repliedToText;
+	private Integer replyCount;
 }

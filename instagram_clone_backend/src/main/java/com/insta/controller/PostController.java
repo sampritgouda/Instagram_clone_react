@@ -41,8 +41,10 @@ public class PostController {
 
     @PostMapping("/add")
     public ResponseEntity<?> createPost(
-            @RequestPart("caption") String caption,
-            @RequestPart("media") MultipartFile mediaFile,
+            @RequestPart(value = "caption", required = false) String caption,
+            @RequestPart(value = "mood", required = false) String mood,
+            @RequestPart(value = "media", required = false) MultipartFile mediaFile,
+            @RequestPart(value = "canvasGradient", required = false) String canvasGradient,
             @RequestHeader("Authorization") String authHeader
     ) {
         try {
@@ -52,7 +54,7 @@ public class PostController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
             }
 
-           String[] uploadPost = postService.UploadPost(mediaFile, caption, user);
+           String[] uploadPost = postService.UploadPost(mediaFile, caption, mood, canvasGradient, user);
            String resourceType = uploadPost[0];
            String url = uploadPost[1];
 
@@ -72,9 +74,10 @@ public class PostController {
     public List<Post> getAllPosts(
     		 @RequestParam(defaultValue = "0") int page,
              @RequestParam(defaultValue = "2") int limit,
+             @RequestParam(value = "mood", required = false) String mood,
              @RequestHeader("Authorization") String authHeader)
     {
-    	return postService.getAllPosts(page, limit, authHeader);
+    	return postService.getAllPosts(page, limit, mood, authHeader);
     }
     
     @DeleteMapping("/{id}")
@@ -82,10 +85,12 @@ public class PostController {
     {
     	try {
     		Post post = postRepository.findById(id).orElseThrow();
-        	cloudinary.uploader().destroy(
-                    post.getPostPublicId(),
-                    ObjectUtils.asMap("resource_type", post.getMediaType()) 
-                );
+            if (post.getMediaType() != null && !post.getMediaType().equals("canvas")) {
+                cloudinary.uploader().destroy(
+                        post.getPostPublicId(),
+                        ObjectUtils.asMap("resource_type", post.getMediaType()) 
+                    );
+            }
         	postRepository.delete(post);
         	return ResponseEntity.ok().build();
 		} catch (Exception e) {

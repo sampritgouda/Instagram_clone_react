@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useToast } from "../context/ToastContext";
 import { API_BASE_URL } from "../config";
 
 const PersonalDetails = () => {
@@ -18,12 +19,7 @@ const PersonalDetails = () => {
   const [editUsername, setEditUsername] = useState(false);
   const [changePass, setChangePass] = useState(false);
 
-  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
-
-  const showPopup = (message, type = "success") => {
-    setPopup({ show: true, message, type });
-    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 2000);
-  };
+  const { addToast } = useToast();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -39,13 +35,18 @@ const PersonalDetails = () => {
           setEmail(data.email);
         }
       } catch (err) {
-        console.error("Error fetching user details:", err);
+        addToast("Error fetching user details", "error");
       }
     };
     fetchUser();
   }, []);
 
   const handleUpdateDetails = async (field, value) => {
+    if (field === "username" && (!value || value.trim().length < 3)) {
+      addToast("Username must be at least 3 characters long", "error");
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
       const resp = await fetch(
@@ -60,22 +61,30 @@ const PersonalDetails = () => {
         }
       );
 
+      let data = {};
+      try {
+        data = await resp.json();
+      } catch (e) {}
+
       if (resp.ok) {
-        showPopup(`${field} updated successfully`, "success");
+        addToast(`${field.charAt(0).toUpperCase() + field.slice(1)} updated successfully`, "success");
         if (field === "username") setEditUsername(false);
       } else {
-        showPopup("Failed to update", "error");
+        addToast(data.error || data.message || "Failed to update details", "error");
       }
     } catch (err) {
-      console.error("Error updating details:", err);
-      showPopup("Error updating details", "error");
+      addToast("Error updating details", "error");
     }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
+    if (newPassword.length < 6) {
+      addToast("Password must be at least 6 characters long", "error");
+      return;
+    }
     if (newPassword !== confirmPassword) {
-      showPopup("New passwords do not match", "error");
+      addToast("New passwords do not match", "error");
       return;
     }
 
@@ -93,36 +102,28 @@ const PersonalDetails = () => {
         }
       );
 
+      let data = {};
+      try {
+        data = await resp.json();
+      } catch (e) {}
+
       if (resp.ok) {
-        showPopup("Password updated successfully", "success");
+        addToast("Password updated successfully", "success");
         setOldPassword("");
         setNewPassword("");
         setConfirmPassword("");
         setChangePass(false);
       } else {
-        const errData = await resp.json();
-        showPopup(errData.error || "Failed to update password", "error");
+        addToast(data.error || data.message || "Failed to update password", "error");
       }
     } catch (err) {
-      console.error("Error changing password:", err);
-      showPopup("Error changing password", "error");
+      addToast("Error changing password", "error");
     }
   };
 
   return (
     <div className="container p-4 text-white position-relative">
       <h4 className="mb-4">Personal Details</h4>
-
-      {popup.show && (
-        <div
-          className={`position-fixed top-0 start-50 translate-middle-x mt-3 px-4 py-2 rounded shadow ${
-            popup.type === "success" ? "bg-success" : "bg-danger"
-          } text-white`}
-          style={{ zIndex: 9999 }}
-        >
-          {popup.message}
-        </div>
-      )}
 
       {/* Username */}
       <div className="bg-dark p-3 rounded mb-3 d-flex justify-content-between align-items-center">

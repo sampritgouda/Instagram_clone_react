@@ -1,19 +1,32 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import { useToast } from '../context/ToastContext';
 import { API_BASE_URL } from '../config';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-const { setProfileImage } = useUser();
+  const { setProfileImage } = useUser();
+  const { addToast } = useToast();
 
+  const validateEmail = (emailVal) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(emailVal);
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    if (!validateEmail(email)) {
+      addToast('Please enter a valid email address.', 'error');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const resp = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -22,26 +35,41 @@ const { setProfileImage } = useUser();
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await resp.json();
+      let data = null;
+      let errorMessage = "Invalid email or password";
+      
+      try {
+        const contentType = resp.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          data = await resp.json();
+        } else {
+          const text = await resp.text();
+          if (text) errorMessage = text;
+        }
+      } catch (e) {
+        // Fallback to default error
+      }
 
-      if (resp.ok) {
-        setMessage('✅ Login successful!');
-
-        
+      if (resp.ok && data) {
+        addToast('Login successful! Redirecting...', 'success');
         setProfileImage(data.profileImage);
 
-        // optional: still keep id/token in localStorage if needed
         localStorage.setItem('token', data.token);
         localStorage.setItem('userId', data.id);
 
         setTimeout(() => {
           navigate('/home');
-        }, 2000);
+        }, 1500);
       } else {
-        setMessage('❌ error: ' + (data.message || data));
+        if (data && (data.message || data.error)) {
+          errorMessage = data.message || data.error;
+        }
+        addToast(errorMessage, 'error');
       }
     } catch (error) {
-      setMessage('something went wrong');
+      addToast('Something went wrong. Please check your network connection.', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -57,6 +85,7 @@ const { setProfileImage } = useUser();
             placeholder="Email"
             value={email}
             required
+            disabled={loading}
             onChange={(e) => setEmail(e.target.value)}
           />
           <label className="form-label mt-3">Enter Password</label>
@@ -66,23 +95,25 @@ const { setProfileImage } = useUser();
             placeholder="Password"
             value={password}
             required
+            disabled={loading}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <button type="submit" className="btn btn-primary w-100">Login</button>
+          <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+            {loading ? (
+              <span className="d-flex align-items-center justify-content-center gap-2">
+                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                Logging in...
+              </span>
+            ) : (
+              "Login"
+            )}
+          </button>
         </form>
-        {message && (
-          <div
-            className={`alert mt-3 ${
-              message.startsWith("✅") ? "alert-success" : "alert-danger"
-            }`}
-          >
-            {message}
-          </div>
-        )}
         <div className="text-center mt-3">
-          <span>Already have an account? </span>
+          <span>Don't have an account? </span>
           <button
             className="btn btn-link p-0"
+            disabled={loading}
             onClick={() => navigate("/")}
             style={{ textDecoration: "none" }}
           >

@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage'
 import CreatePage from './pages/CreatePage'
 import { UploadProvider } from './context/UploadContext'
 import { UserProvider } from './context/UserContext'   // ⬅️ import
+import { ToastProvider } from './context/ToastContext' // ⬅️ import toast provider
 import UploadBanner from './components/UploadBanner'
 
 import 'bootstrap/dist/css/bootstrap.min.css'
@@ -13,23 +14,27 @@ import './App.css'
 import ReelsPage from './pages/Reelspage'
 import ProfilePage from './pages/ProfilePage'
 import ProfileSettings from './pages/ProfileSettings'
+import MessagesPage from './pages/MessagesPage'
 
 const App = () => {
   return (
-    <UserProvider>
-      <UploadProvider>
-        <UploadBanner />
-        <Routes>
-          <Route path='/' element={<SignupPage />} />
-          <Route path='/home' element={<HomePage />} />
-          <Route path='/login' element={<LoginPage />} />
-          <Route path='/create/:select' element={<CreatePage />} />
-          <Route path='/reels' element={<ReelsPage/>}/>
-          <Route path="/profile/:id/:tab?" element={<ProfilePage />} />
-          <Route path="/profile/edit" element={<ProfileSettings />} />
-        </Routes>
-      </UploadProvider>
-    </UserProvider>
+    <ToastProvider>
+      <UserProvider>
+        <UploadProvider>
+          <UploadBanner />
+          <Routes>
+            <Route path='/' element={<SignupPage />} />
+            <Route path='/home' element={<HomePage />} />
+            <Route path='/login' element={<LoginPage />} />
+            <Route path='/create/:select' element={<CreatePage />} />
+            <Route path='/reels' element={<ReelsPage/>}/>
+            <Route path="/profile/:id/:tab?" element={<ProfilePage />} />
+            <Route path="/profile/edit" element={<ProfileSettings />} />
+            <Route path="/messages" element={<MessagesPage />} />
+          </Routes>
+        </UploadProvider>
+      </UserProvider>
+    </ToastProvider>
   )
 }
 

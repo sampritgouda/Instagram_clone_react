@@ -10,10 +10,14 @@ import com.insta.model.Post;
 import com.insta.model.Reel;
 
 @Repository
-public interface CommentRepository extends JpaRepository<Comment, Long>{
+public interface CommentRepository extends JpaRepository<Comment, Long> {
 
 	List<Comment> findByReel(Reel reel);
 
 	List<Comment> findByPost(Post post);
+
+	List<Comment> findByRepliedTo(Comment repliedTo);
+
+	long countByRepliedTo(Comment repliedTo);
 
 }

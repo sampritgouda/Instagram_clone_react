@@ -3,6 +3,7 @@ package com.insta.config;
 import com.insta.security.CustomUserDetailsService;
 import com.insta.security.JwtAuthenticationEntryPoint;
 import com.insta.security.JwtAuthenticationFilter;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,6 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class SecurityConfig {
@@ -64,8 +66,17 @@ public class SecurityConfig {
             "https://instagram-clone-react.onrender.com",
             "https://instagram-clone-react-1.onrender.com"
         ));
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("*"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        config.setAllowedHeaders(Arrays.asList(
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "Origin",
+            "X-Requested-With",
+            "Access-Control-Request-Method",
+            "Access-Control-Request-Headers"
+        ));
+        config.setExposedHeaders(Arrays.asList("Authorization", "Content-Disposition"));
         config.setAllowCredentials(true); // works since we are specifying origins
         config.setMaxAge(3600L);
 
@@ -90,6 +101,20 @@ public class SecurityConfig {
         return new ProviderManager(daoAuth);
     }
 
-   
+    /**
+     * Prevent Spring Boot from auto-registering JwtAuthenticationFilter as a
+     * standalone servlet filter (it is already added inside the security filter chain).
+     * Without this, the filter runs TWICE — once outside security context (no auth set)
+     * and once inside, causing 401 on PUT/DELETE even with a valid token.
+     */
+    @Bean
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterRegistration(
+            JwtAuthenticationFilter filter) {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration =
+                new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
 
 }

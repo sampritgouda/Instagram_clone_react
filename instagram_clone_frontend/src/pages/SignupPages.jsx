@@ -1,18 +1,48 @@
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../context/ToastContext";
 import { API_BASE_URL } from "../config";
 
 function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { addToast } = useToast();
+
+  const validateEmail = (emailVal) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(emailVal);
+  };
+
+  const validateUsername = (userVal) => {
+    // Alphanumeric, underscores and dots only, 3-20 characters
+    const re = /^[a-zA-Z0-9_.]+$/;
+    return re.test(userVal) && userVal.length >= 3 && userVal.length <= 20;
+  };
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    console.log(name);
+
+    if (!validateUsername(name)) {
+      addToast("Username must be between 3 and 20 characters and contain only letters, numbers, underscores (_), or dots (.)", "error");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      addToast("Please enter a valid email address.", "error");
+      return;
+    }
+
+    if (password.length < 6) {
+      addToast("Password must be at least 6 characters long.", "error");
+      return;
+    }
+
+    setLoading(true);
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
@@ -20,18 +50,38 @@ function SignupPage() {
         body: JSON.stringify({ username: name, email, password }),
       });
 
-      const data = await response.json();
+      let data = null;
+      let errorMessage = "Registration failed";
+      
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          data = await response.json();
+        } else {
+          const text = await response.text();
+          if (text) errorMessage = text;
+        }
+      } catch (err) {
+        // ignore parse error
+      }
 
-      if (response.ok) {
-        setMessage("✅ Signup successful!");
+      if (response.ok && data) {
+        addToast("Signup successful! Welcome onboard.", "success");
         localStorage.setItem("token", data.token);
         localStorage.setItem("userId", data.id);
-        navigate("/home");
+        setTimeout(() => {
+          navigate("/home");
+        }, 1500);
       } else {
-        setMessage("❌ Error: " + (data.message || JSON.stringify(data)));
+        if (data && (data.message || data.error)) {
+          errorMessage = data.message || data.error;
+        }
+        addToast(errorMessage, "error");
       }
     } catch (error) {
-      setMessage("⚠️ Something went wrong!");
+      addToast("Something went wrong. Please check your network connection.", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,12 +91,13 @@ function SignupPage() {
         <h2 className="text-center mb-4">Sign Up</h2>
         <form onSubmit={handleSignup}>
           <div className="mb-3">
-            <label className="form-label">Full Name</label>
+            <label className="form-label">Username</label>
             <input
               type="text"
               className="form-control"
-              placeholder="Enter your name"
+              placeholder="Enter your username (e.g. trend_user)"
               value={name}
+              disabled={loading}
               onChange={(e) => setName(e.target.value)}
               required
             />
@@ -59,6 +110,7 @@ function SignupPage() {
               className="form-control"
               placeholder="Enter your email"
               value={email}
+              disabled={loading}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
@@ -69,31 +121,31 @@ function SignupPage() {
             <input
               type="password"
               className="form-control"
-              placeholder="Enter password"
+              placeholder="Enter password (min 6 characters)"
               value={password}
+              disabled={loading}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
 
-          <button type="submit" className="btn btn-primary w-100">
-            Sign Up
+          <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+            {loading ? (
+              <span className="d-flex align-items-center justify-content-center gap-2">
+                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                Signing up...
+              </span>
+            ) : (
+              "Sign Up"
+            )}
           </button>
         </form>
 
-        {message && (
-          <div
-            className={`alert mt-3 ${
-              message.startsWith("✅") ? "alert-success" : "alert-danger"
-            }`}
-          >
-            {message}
-          </div>
-        )}
         <div className="text-center mt-3">
           <span>Already have an account? </span>
           <button
             className="btn btn-link p-0"
+            disabled={loading}
             onClick={() => navigate("/login")}
             style={{ textDecoration: "none" }}
           >

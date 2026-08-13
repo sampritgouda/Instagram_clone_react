@@ -1,6 +1,7 @@
 package com.insta.controller;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,8 +46,25 @@ public class ProfileSettings {
             @RequestBody Map<String, String> body) {
        User user = userService.getUserByToken(authHeader);
 
-        user.setUsername(body.getOrDefault("username", user.getUsername()));
-        user.setEmail(body.getOrDefault("email", user.getEmail()));
+        String newUsername = body.get("username");
+        String newEmail = body.get("email");
+
+        if (newUsername != null && !newUsername.trim().isEmpty() && !newUsername.equals(user.getUsername())) {
+            Optional<User> existingUser = userRepository.findByUsername(newUsername);
+            if (existingUser.isPresent() && !existingUser.get().getId().equals(user.getId())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Username is already taken"));
+            }
+            user.setUsername(newUsername);
+        }
+
+        if (newEmail != null && !newEmail.trim().isEmpty() && !newEmail.equals(user.getEmail())) {
+            Optional<User> existingUser = userRepository.findByEmail(newEmail);
+            if (existingUser.isPresent() && !existingUser.get().getId().equals(user.getId())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Email is already in use"));
+            }
+            user.setEmail(newEmail);
+        }
+
         userRepository.save(user);
 
         return ResponseEntity.ok(Map.of("message", "Details updated successfully"));

@@ -19,6 +19,13 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
     navigate(`/profile/${userId}/saved`);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("profileImage");
+    navigate("/login");
+  };
+
   return (
     <div className="side-component d-md-block col-md-3 col-lg-2 bg-black  p-3 border-end border-secondary w-100"
     style={{ height: window.innerWidth < 768 ? "60px" : "100vh" }} >
@@ -107,10 +114,10 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
               <FiHardDrive/> Your Activity
             </Link>
           </li>
-          <li>
-            <Link className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3">
+          <li onClick={handleLogout}>
+            <button className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3 w-100 text-start border-0 bg-transparent">
               Logout
-            </Link>
+            </button>
           </li>
         </ul>
       </div>}

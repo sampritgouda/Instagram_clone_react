@@ -7,7 +7,8 @@ import Comment from './Comment'
 import { useNavigate } from 'react-router-dom'
 
 const PostPopup = ({feed,onclose,user}) => {
-  const [muted, setmuted] = useState(true)
+  // Global mute state — shared with Feeds & Reels via localStorage
+  const [globalMuted, setGlobalMuted] = useState(() => localStorage.getItem('globalMuted') !== 'false')
   const videoref = useRef()
   const [likeCount, setlikeCount] = useState(feed.likeCount)
 console.log(feed)
@@ -17,7 +18,12 @@ console.log(feed)
     onclose()
     navigate(`/profile/${id}`)
   }
-  const toglemute = () => setmuted(!muted)
+  const toglemute = () => {
+    const next = !globalMuted;
+    setGlobalMuted(next);
+    localStorage.setItem('globalMuted', String(next));
+    if (videoref.current) videoref.current.muted = next;
+  }
 
   const togglePlayPause = id => {
   
@@ -48,14 +54,14 @@ console.log(feed)
                 loop
                 style={{ objectFit: "cover",cursor:'pointer' }}
                 autoPlay
-                muted={muted}
+                muted={globalMuted}
               >
                 <source src={feed.mediaUrl} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
             ) : null}
             <span  style={{position:'absolute',bottom:'20px',right:'25px',cursor:'pointer'}} onClick={toglemute}>
-              {muted ? <FaVolumeMute color='white' size={20} opacity={0.5}/> : <FaVolumeUp color='white' size={20} opacity={0.5}/>}
+              {globalMuted ? <FaVolumeMute color='white' size={20} opacity={0.5}/> : <FaVolumeUp color='white' size={20} opacity={0.5}/>}
             </span>
             </div>
             <div className='d-flex flex-column px-4 py-3 gap-4 text-white bg-dark' style={{width:'28%',height:'80%'}}>

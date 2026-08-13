@@ -46,6 +46,7 @@ public class Post {
 
      private String imageUrl;
     private String caption;
+    private String mood; // e.g. "Chill", "Motivated", "Funny", "Artistic", "Focused"
     private LocalDateTime createdAt;
 
     private String mediaType;

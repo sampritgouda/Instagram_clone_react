@@ -37,12 +37,19 @@ public class PostService {
    private final FollowerRepository followerRepository;
    private final FollowRequestRepository followRequestRepository;
    
-   public List<Post> getAllPosts(int page, int limit, String authHeader) {
+   public List<Post> getAllPosts(int page, int limit, String mood, String authHeader) {
 	    User user = userService.getUserByToken(authHeader);
 	    Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
 	    return postRepository.findAll(pageable).stream()
 	        .filter(post -> {
+	            // Mood filtering
+	            if (mood != null && !mood.trim().isEmpty() && !mood.equalsIgnoreCase("All")) {
+	                if (post.getMood() == null || !post.getMood().equalsIgnoreCase(mood)) {
+	                    return false;
+	                }
+	            }
+
 	            // Hide posts if account is private and not followed
 	            if (post.getUser().getIsPrivate()) {
 	                boolean isOwn = post.getUser().getId().equals(user.getId());
@@ -75,29 +82,40 @@ public class PostService {
 	}
 
    
-   public String[] UploadPost(MultipartFile mediaFile, String caption ,User user) throws IOException
+   public String[] UploadPost(MultipartFile mediaFile, String caption, String mood, String canvasGradient, User user) throws IOException
    {
-	   // 2. Upload to Cloudinary
-       Map uploadResult = cloudinary.uploader().upload(
-               mediaFile.getBytes(),
-               Map.of("resource_type", "auto") // handles image/video automatically
-       );
-
-       String url = uploadResult.get("secure_url").toString();
-       String public_id = uploadResult.get("public_id").toString();
-       String resourceType = uploadResult.get("resource_type").toString();
-
-       // 3. Save post to DB
        Post post = new Post();
        post.setCaption(caption);
-       post.setImageUrl(url);
-       post.setMediaType(resourceType);
+       post.setMood(mood);
        post.setUser(user);
-       post.setPostPublicId(public_id);
        post.setCreatedAt(LocalDateTime.now());
 
+       String url;
+       String public_id;
+       String resourceType;
+
+       if (mediaFile != null && !mediaFile.isEmpty()) {
+           // 2. Upload to Cloudinary
+           Map uploadResult = cloudinary.uploader().upload(
+                   mediaFile.getBytes(),
+                   Map.of("resource_type", "auto") // handles image/video automatically
+           );
+           url = uploadResult.get("secure_url").toString();
+           public_id = uploadResult.get("public_id").toString();
+           resourceType = uploadResult.get("resource_type").toString();
+       } else {
+           // Canvas Card!
+           url = canvasGradient != null ? canvasGradient : "linear-gradient(135deg, #f6d365 0%, #fda085 100%)";
+           public_id = "canvas_card_" + System.currentTimeMillis();
+           resourceType = "canvas";
+       }
+
+       post.setImageUrl(url);
+       post.setMediaType(resourceType);
+       post.setPostPublicId(public_id);
+
        postRepository.save(post);
-       return new String[] {resourceType,url};
+       return new String[] {resourceType, url};
    }
    
    

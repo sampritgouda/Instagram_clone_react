@@ -8,6 +8,7 @@ import com.insta.repository.UserRepository;
 import com.insta.security.JwtUtil;
 
 import java.util.Optional;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,7 +39,10 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
         if (userRepository.findByEmail(req.getEmail()).isPresent()) {
-            return ResponseEntity.badRequest().body("Email already in use");
+            return ResponseEntity.badRequest().body(Map.of("message", "Email already in use"));
+        }
+        if (userRepository.findByUsername(req.getUsername()).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Username is already taken"));
         }
         User user = new User();
         user.setUsername(req.getUsername());
