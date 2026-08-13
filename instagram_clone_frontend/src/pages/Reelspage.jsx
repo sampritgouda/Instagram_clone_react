@@ -103,6 +103,18 @@ function ReelsPage() {
 
   }, []);
 
+  // Close comment box when clicking outside
+  useEffect(() => {
+    if (!viewComment) return;
+    const handleDocumentClick = () => {
+      setviewComment(false);
+    };
+    document.addEventListener('click', handleDocumentClick);
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  }, [viewComment]);
+
   // Fetch recent conversations for sharing
   const fetchRecentChats = async () => {
     try {
@@ -323,7 +335,8 @@ function ReelsPage() {
                   <p className='text-white mb-0'>{likecount[reel.id]}</p>
                 </span>
 
-                <span style={{ cursor: 'pointer' }} onClick={() => {
+                <span style={{ cursor: 'pointer' }} onClick={(e) => {
+                  e.stopPropagation();
                   setviewComment(!viewComment)
                   setselectedReel(reel)
                 }} className="absolute bottom-1 right-5 bg-black/60 p-3 rounded-full text-white">
@@ -375,8 +388,9 @@ function ReelsPage() {
           {!hasMore && <p>No more reels</p>}
         </div>
       </div>
-      {viewComment && <div className='position-absolute h-50 p-2 bg-dark d-flex justify-content-center align-items-center'
-        style={{ top: "20%", right: "2%", width: "25%" }}>
+      {viewComment && <div className='position-absolute h-50 p-2 bg-dark d-flex justify-content-center align-items-center reels-comments-container'
+        style={{ top: "20%", right: "2%", width: "25%" }}
+        onClick={(e) => e.stopPropagation()}>
         <Comment id={selectedReel.id} type={'reel'} /></div>}
       {viewmore && <div className='position-absolute rounded p-2 bg-dark d-flex justify-content-center align-items-center'
         style={{ bottom: "30%", right: "15%", width: "15%" }}>

@@ -34,7 +34,7 @@ function CreatePage() {
   const token = localStorage.getItem("token");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
-  const gf = new GiphyFetch(process.env.VITE_GIPHY_API_KEY || process.env.REACT_APP_GIPHY_API_KEY || '');
+  const gf = new GiphyFetch(import.meta.env.VITE_GIPHY_API_KEY || '');
   const emojiPickerRoot = React.useRef(null);
   const emojiPickerInstance = React.useRef(null);
 

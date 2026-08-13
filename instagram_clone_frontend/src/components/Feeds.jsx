@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { FaBookmark,  FaHeart, FaRegBookmark, FaRegComment, FaRegHeart, FaShare, FaVolumeMute, FaVolumeUp } from 'react-icons/fa'; // icons
+import { FaBookmark, FaHeart, FaRegBookmark, FaRegComment, FaRegHeart, FaShare, FaVolumeMute, FaVolumeUp } from 'react-icons/fa'; // icons
 import { FaShareNodes } from 'react-icons/fa6';
 import { useNavigate } from 'react-router-dom';
 import ProfileHeader from './ProfileHeader';
@@ -199,7 +199,7 @@ function Feeds({ scrollcontainerref }) {
           const video = entry.target;
           const index = video.dataset.index;
           if (entry.isIntersecting) {
-            video.play().catch(() => {});
+            video.play().catch(() => { });
             setPlayingState((prev) => ({ ...prev, [index]: true }));
           } else {
             video.pause();
@@ -218,6 +218,18 @@ function Feeds({ scrollcontainerref }) {
       observer.disconnect();
     };
   }, [feedData]);
+
+  // Close comment box when clicking outside
+  useEffect(() => {
+    if (!viewcomment) return;
+    const handleDocumentClick = () => {
+      setviewcomment(false);
+    };
+    document.addEventListener('click', handleDocumentClick);
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  }, [viewcomment]);
 
   useEffect(() => {
     const scrollContainer = scrollcontainerref.current;
@@ -305,8 +317,8 @@ function Feeds({ scrollcontainerref }) {
   // Mindful Blocker view
   if (isLimitExceeded()) {
     return (
-      <div className="card p-5 text-center text-white bg-dark bg-opacity-75 border-secondary rounded shadow-lg m-auto" 
-           style={{ maxWidth: '480px', backdropFilter: 'blur(20px)', marginTop: '20%', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <div className="card p-5 text-center text-white bg-dark bg-opacity-75 border-secondary rounded shadow-lg m-auto"
+        style={{ maxWidth: '480px', backdropFilter: 'blur(20px)', marginTop: '20%', border: '1px solid rgba(255,255,255,0.1)' }}>
         <div className="mb-4 display-3" style={{ animation: 'breathing 3s ease-in-out infinite' }}>🌿</div>
         <h4 className="mb-3 fw-bold font-family-sans-serif">Zen Scroll Break</h4>
         <p className="text-secondary mb-4" style={{ fontSize: '14px', lineHeight: '1.6' }}>
@@ -317,16 +329,16 @@ function Feeds({ scrollcontainerref }) {
           Take a deep breath, stretch, and enjoy the physical world.
         </p>
         <div className="d-flex gap-3 justify-content-center">
-          <button 
-            className="btn btn-outline-info px-4 py-2" 
+          <button
+            className="btn btn-outline-info px-4 py-2"
             onClick={() => setPausedUntil(Date.now() + 5 * 60 * 1000)} // Pause Zen Mode limit for 5 min
             style={{ fontSize: '13px', borderRadius: '20px' }}
           >
             Snooze (5m)
           </button>
-          <button 
-            className="btn btn-danger px-4 py-2" 
-            onClick={() => setZenEnabled(false)} 
+          <button
+            className="btn btn-danger px-4 py-2"
+            onClick={() => setZenEnabled(false)}
             style={{ fontSize: '13px', borderRadius: '20px' }}
           >
             Turn Off Zen Mode
@@ -369,9 +381,9 @@ function Feeds({ scrollcontainerref }) {
             </button>
           ))}
         </div>
-        
+
         {/* Zen button toggle */}
-        <button 
+        <button
           className={`btn btn-sm px-3 py-2 rounded-pill text-white border-0`}
           onClick={() => setShowSettings(!showSettings)}
           style={{
@@ -393,12 +405,12 @@ function Feeds({ scrollcontainerref }) {
             <span>⏱️ Zen Mode Settings</span>
             <button className="btn-close btn-close-white" onClick={() => setShowSettings(false)} aria-label="Close" style={{ fontSize: '10px' }}></button>
           </h6>
-          
+
           <div className="d-flex flex-column gap-3">
             <div className="form-check form-switch d-flex align-items-center">
-              <input 
-                className="form-check-input" 
-                type="checkbox" 
+              <input
+                className="form-check-input"
+                type="checkbox"
                 id="zenSwitch"
                 checked={zenEnabled}
                 onChange={(e) => {
@@ -410,17 +422,17 @@ function Feeds({ scrollcontainerref }) {
               />
               <label className="form-check-label ms-2" htmlFor="zenSwitch" style={{ fontSize: '13px', cursor: 'pointer' }}>Enable scrolling restrictions</label>
             </div>
-            
+
             {zenEnabled && (
               <>
                 <div className="d-flex gap-3 align-items-center flex-wrap">
                   <span className="text-secondary" style={{ fontSize: '13px' }}>Limit type:</span>
                   <div className="form-check form-check-inline m-0 d-flex align-items-center">
-                    <input 
-                      className="form-check-input" 
-                      type="radio" 
-                      name="limitType" 
-                      id="limitPosts" 
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="limitType"
+                      id="limitPosts"
                       value="posts"
                       checked={zenLimitType === 'posts'}
                       onChange={() => {
@@ -432,11 +444,11 @@ function Feeds({ scrollcontainerref }) {
                     <label className="form-check-label ms-1" htmlFor="limitPosts" style={{ fontSize: '13px', cursor: 'pointer' }}>Posts read</label>
                   </div>
                   <div className="form-check form-check-inline m-0 d-flex align-items-center">
-                    <input 
-                      className="form-check-input" 
-                      type="radio" 
-                      name="limitType" 
-                      id="limitTime" 
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="limitType"
+                      id="limitTime"
                       value="time"
                       checked={zenLimitType === 'time'}
                       onChange={() => {
@@ -451,8 +463,8 @@ function Feeds({ scrollcontainerref }) {
 
                 <div className="d-flex gap-3 align-items-center">
                   <span className="text-secondary" style={{ fontSize: '13px' }}>Limit boundary:</span>
-                  <select 
-                    className="form-select form-select-sm bg-dark text-white border-secondary" 
+                  <select
+                    className="form-select form-select-sm bg-dark text-white border-secondary"
                     style={{ width: '130px', fontSize: '12px' }}
                     value={zenLimitValue}
                     onChange={(e) => {
@@ -516,11 +528,11 @@ function Feeds({ scrollcontainerref }) {
               style={{ maxHeight: "500px", objectFit: "cover" }}
             />
           ) : feed.mediaType === "canvas" ? (
-            <div 
+            <div
               className="card-img-top d-flex justify-content-center align-items-center p-4 text-center text-white"
-              style={{ 
-                height: "380px", 
-                background: feed.imageUrl, 
+              style={{
+                height: "380px",
+                background: feed.imageUrl,
                 borderRadius: '8px',
                 fontSize: '22px',
                 fontWeight: 'bold',
@@ -579,7 +591,8 @@ function Feeds({ scrollcontainerref }) {
                 }}
               />
 
-              <span style={{ cursor: 'pointer' }} onClick={() => {
+              <span style={{ cursor: 'pointer' }} onClick={(e) => {
+                e.stopPropagation();
                 setviewcomment(!viewcomment)
                 setselectedPost(feed.id)
               }}>
@@ -612,8 +625,9 @@ function Feeds({ scrollcontainerref }) {
       ))}
       {loading && <p className='text-white text-center'>Loading more reels...</p>}
       {!hasMore && <p className='text-white text-center'>No more reels</p>}
-      {viewcomment && <div className='position-absolute h-50 p-2 bg-dark d-flex justify-content-center align-items-center'
-        style={{ top: "18%", right: "10%", width: "25%" }}>
+      {viewcomment && <div className='position-absolute h-50 p-2 bg-dark d-flex justify-content-center align-items-center  reels-comments-container'
+        style={{ top: "18%", right: "10%", width: "25%" }}
+        onClick={(e) => e.stopPropagation()}>
         <Comment id={selectedPost} type={'post'} /></div>}
 
       {viewMore && <div className='position-absolute p-2 bg-dark d-flex justify-content-center align-items-center'
@@ -626,115 +640,115 @@ function Feeds({ scrollcontainerref }) {
 
       {/* ── Share Post Modal ── */}
       {openShareModal && sharePost && (
-      <div
-        className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-        style={{ backgroundColor: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(8px)', zIndex: 99999 }}
-        onClick={() => setOpenShareModal(false)}
-      >
         <div
-          className="card bg-dark text-white border-secondary rounded-4 shadow-lg p-4"
-          style={{ width: '100%', maxWidth: '440px', maxHeight: '82vh', display: 'flex', flexDirection: 'column' }}
-          onClick={(e) => e.stopPropagation()}
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+          style={{ backgroundColor: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(8px)', zIndex: 99999 }}
+          onClick={() => setOpenShareModal(false)}
         >
-          {/* Header */}
-          <div className="d-flex align-items-center justify-content-between mb-3">
-            <h5 className="mb-0 fw-bold">Share Post</h5>
-            <button type="button" className="btn-close btn-close-white" onClick={() => setOpenShareModal(false)} />
-          </div>
+          <div
+            className="card bg-dark text-white border-secondary rounded-4 shadow-lg p-4"
+            style={{ width: '100%', maxWidth: '440px', maxHeight: '82vh', display: 'flex', flexDirection: 'column' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <h5 className="mb-0 fw-bold">Share Post</h5>
+              <button type="button" className="btn-close btn-close-white" onClick={() => setOpenShareModal(false)} />
+            </div>
 
-          {/* Post Preview */}
-          <div className="d-flex align-items-center gap-3 p-2 mb-3 rounded-3 border" style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderColor: 'rgba(255,255,255,0.1)' }}>
-            {sharePost.mediaType === 'canvas' ? (
-              <div style={{ width: '50px', height: '65px', borderRadius: '6px', background: sharePost.imageUrl, flexShrink: 0 }} />
-            ) : (
-              <img
-                src={sharePost.imageUrl}
-                className="rounded-2"
-                style={{ width: '50px', height: '65px', objectFit: 'cover', flexShrink: 0 }}
-                alt=""
-              />
-            )}
-            <div style={{ minWidth: 0 }}>
-              <div className="fw-semibold text-white-50" style={{ fontSize: '12px' }}>Sharing post by</div>
-              <div className="fw-bold" style={{ fontSize: '14px' }}>@{sharePost.user?.username}</div>
-              <div className="text-muted text-truncate" style={{ fontSize: '12px', maxWidth: '280px' }}>
-                {sharePost.caption || 'No caption'}
+            {/* Post Preview */}
+            <div className="d-flex align-items-center gap-3 p-2 mb-3 rounded-3 border" style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderColor: 'rgba(255,255,255,0.1)' }}>
+              {sharePost.mediaType === 'canvas' ? (
+                <div style={{ width: '50px', height: '65px', borderRadius: '6px', background: sharePost.imageUrl, flexShrink: 0 }} />
+              ) : (
+                <img
+                  src={sharePost.imageUrl}
+                  className="rounded-2"
+                  style={{ width: '50px', height: '65px', objectFit: 'cover', flexShrink: 0 }}
+                  alt=""
+                />
+              )}
+              <div style={{ minWidth: 0 }}>
+                <div className="fw-semibold text-white-50" style={{ fontSize: '12px' }}>Sharing post by</div>
+                <div className="fw-bold" style={{ fontSize: '14px' }}>@{sharePost.user?.username}</div>
+                <div className="text-muted text-truncate" style={{ fontSize: '12px', maxWidth: '280px' }}>
+                  {sharePost.caption || 'No caption'}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Optional message */}
-          <div className="mb-3">
-            <input
-              type="text"
-              className="form-control bg-black text-white border-secondary rounded-3"
-              placeholder="Write a message..."
-              value={shareMessage}
-              onChange={(e) => setShareMessage(e.target.value)}
-              style={{ fontSize: '14px', border: '1px solid rgba(255,255,255,0.1)' }}
-            />
-          </div>
-
-          {/* Search */}
-          <div className="mb-3">
-            <div className="input-group">
-              <span className="input-group-text bg-black border-secondary text-secondary" style={{ border: '1px solid rgba(255,255,255,0.1)', borderRight: 'none' }}>
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
-              </span>
+            {/* Optional message */}
+            <div className="mb-3">
               <input
                 type="text"
-                className="form-control bg-black text-white border-secondary"
-                placeholder="Search friends..."
-                value={shareSearchQuery}
-                onChange={(e) => setShareSearchQuery(e.target.value)}
-                style={{ fontSize: '14px', border: '1px solid rgba(255,255,255,0.1)', borderLeft: 'none' }}
+                className="form-control bg-black text-white border-secondary rounded-3"
+                placeholder="Write a message..."
+                value={shareMessage}
+                onChange={(e) => setShareMessage(e.target.value)}
+                style={{ fontSize: '14px', border: '1px solid rgba(255,255,255,0.1)' }}
               />
             </div>
-          </div>
 
-          {/* User list */}
-          <div className="flex-grow-1 overflow-auto pe-1" style={{ maxHeight: '300px', scrollbarWidth: 'thin' }}>
-            {(shareSearchQuery.trim() ? shareSearchResults : recentChats).length === 0 ? (
-              <div className="text-center text-muted py-4" style={{ fontSize: '13px' }}>
-                {shareSearchQuery.trim() ? 'No users found' : 'No recent conversations.\nSearch a friend above!'}
+            {/* Search */}
+            <div className="mb-3">
+              <div className="input-group">
+                <span className="input-group-text bg-black border-secondary text-secondary" style={{ border: '1px solid rgba(255,255,255,0.1)', borderRight: 'none' }}>
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" /></svg>
+                </span>
+                <input
+                  type="text"
+                  className="form-control bg-black text-white border-secondary"
+                  placeholder="Search friends..."
+                  value={shareSearchQuery}
+                  onChange={(e) => setShareSearchQuery(e.target.value)}
+                  style={{ fontSize: '14px', border: '1px solid rgba(255,255,255,0.1)', borderLeft: 'none' }}
+                />
               </div>
-            ) : (
-              (shareSearchQuery.trim() ? shareSearchResults : recentChats).map(u => (
-                <div
-                  key={u.id}
-                  className="d-flex align-items-center justify-content-between py-2 border-bottom"
-                  style={{ borderColor: 'rgba(255,255,255,0.05)' }}
-                >
-                  <div className="d-flex align-items-center gap-3">
-                    <img
-                      src={u.userprofile || `https://ui-avatars.com/api/?background=333&color=fff&name=${u.username}`}
-                      className="rounded-circle"
-                      style={{ width: '38px', height: '38px', objectFit: 'cover' }}
-                      alt=""
-                    />
-                    <div className="fw-semibold" style={{ fontSize: '14px' }}>{u.username}</div>
-                  </div>
-                  <button
-                    className="btn btn-sm px-3 rounded-pill fw-bold"
-                    disabled={sentStatus[u.id]}
-                    onClick={() => handleSharePost(u.id)}
-                    style={{
-                      fontSize: '12px',
-                      background: sentStatus[u.id] ? '#444' : 'linear-gradient(135deg,#e05d5d,#c0392b)',
-                      border: 'none',
-                      color: 'white'
-                    }}
-                  >
-                    {sentStatus[u.id] ? 'Sent ✓' : 'Send'}
-                  </button>
+            </div>
+
+            {/* User list */}
+            <div className="flex-grow-1 overflow-auto pe-1" style={{ maxHeight: '300px', scrollbarWidth: 'thin' }}>
+              {(shareSearchQuery.trim() ? shareSearchResults : recentChats).length === 0 ? (
+                <div className="text-center text-muted py-4" style={{ fontSize: '13px' }}>
+                  {shareSearchQuery.trim() ? 'No users found' : 'No recent conversations.\nSearch a friend above!'}
                 </div>
-              ))
-            )}
+              ) : (
+                (shareSearchQuery.trim() ? shareSearchResults : recentChats).map(u => (
+                  <div
+                    key={u.id}
+                    className="d-flex align-items-center justify-content-between py-2 border-bottom"
+                    style={{ borderColor: 'rgba(255,255,255,0.05)' }}
+                  >
+                    <div className="d-flex align-items-center gap-3">
+                      <img
+                        src={u.userprofile || `https://ui-avatars.com/api/?background=333&color=fff&name=${u.username}`}
+                        className="rounded-circle"
+                        style={{ width: '38px', height: '38px', objectFit: 'cover' }}
+                        alt=""
+                      />
+                      <div className="fw-semibold" style={{ fontSize: '14px' }}>{u.username}</div>
+                    </div>
+                    <button
+                      className="btn btn-sm px-3 rounded-pill fw-bold"
+                      disabled={sentStatus[u.id]}
+                      onClick={() => handleSharePost(u.id)}
+                      style={{
+                        fontSize: '12px',
+                        background: sentStatus[u.id] ? '#444' : 'linear-gradient(135deg,#e05d5d,#c0392b)',
+                        border: 'none',
+                        color: 'white'
+                      }}
+                    >
+                      {sentStatus[u.id] ? 'Sent ✓' : 'Send'}
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    )}
-  </div>
+      )}
+    </div>
   );
 }
 
