@@ -52,7 +52,7 @@ function SignupPage() {
 
       let data = null;
       let errorMessage = "Registration failed";
-      
+
       try {
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
@@ -86,7 +86,7 @@ function SignupPage() {
   };
 
   return (
-    <div className="container mt-5 w-100">
+    <div className="container w-100 .justify-content-center d-flex" style={{ minHeight: "100vh" }}>
       <div className="card shadow p-4" style={{ maxWidth: "450px", margin: "auto" }}>
         <h2 className="text-center mb-4">Sign Up</h2>
         <form onSubmit={handleSignup}>
