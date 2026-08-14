@@ -15,6 +15,7 @@ import ReelsPage from './pages/Reelspage'
 import ProfilePage from './pages/ProfilePage'
 import ProfileSettings from './pages/ProfileSettings'
 import MessagesPage from './pages/MessagesPage'
+import NotificationsPage from './pages/NotificationsPage'
 
 const App = () => {
   return (
@@ -31,6 +32,8 @@ const App = () => {
             <Route path="/profile/:id/:tab?" element={<ProfilePage />} />
             <Route path="/profile/edit" element={<ProfileSettings />} />
             <Route path="/messages" element={<MessagesPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+
           </Routes>
         </UploadProvider>
       </UserProvider>

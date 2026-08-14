@@ -4,7 +4,9 @@ import Like from './Like'
 import Save from './Save'
 import {  FaRegComment, FaShare, FaVolumeMute, FaVolumeUp } from 'react-icons/fa'
 import Comment from './Comment'
+import ShareModal from './ShareModal'
 import { useNavigate } from 'react-router-dom'
+import { API_BASE_URL } from '../config'
 
 const PostPopup = ({feed,onclose,user}) => {
   // Global mute state — shared with Feeds & Reels via localStorage
@@ -29,6 +31,27 @@ console.log(feed)
   
     if (videoref.current.paused) videoref.current.play();
     else videoref.current.pause();
+  };
+
+  const [openShareModal, setOpenShareModal] = useState(false);
+  const token = localStorage.getItem('token');
+
+  const handleSharePost = async (recipientId, msg) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/messages/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          recipientId,
+          content: msg && msg.trim() ? msg.trim() : 'Shared a post',
+          postId: feed.id
+        })
+      });
+      return res.ok;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
   };
 
   return (
@@ -86,7 +109,9 @@ console.log(feed)
                 <div className='d-flex gap-3'>
                 <Like id= {feed.id} type={feed.type} initialLiked={feed.liked} initialCount={feed.likeCount} onLikeToggle={(newLike)=>setlikeCount(newLike ? likeCount+1 : likeCount-1)}/>
                 <FaRegComment size={24}/>
-                <FaShare size={24} />
+                <span style={{ cursor: 'pointer' }} onClick={() => setOpenShareModal(true)}>
+                  <FaShare size={24} />
+                </span>
                 </div>
                 <div>
                 <Save id={feed.id} type={feed.type} initialSaved={feed.saved}/>
@@ -95,6 +120,14 @@ console.log(feed)
                <p className='mb-0 ps-1' style={{marginTop:"-20px"}}>{likeCount} likes</p>
             </div>
         </div>
+
+        <ShareModal
+          isOpen={openShareModal}
+          onClose={() => setOpenShareModal(false)}
+          contentType="post"
+          contentData={{ ...feed, imageUrl: feed.mediaUrl }}
+          onSend={handleSharePost}
+        />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SideComponent from '../components/SideComponent';
 import { API_BASE_URL } from '../config';
+import { FaTimes } from 'react-icons/fa';
 
 const MessagesPage = () => {
   const navigate = useNavigate();
@@ -191,13 +192,22 @@ const MessagesPage = () => {
           style={{ width: '340px', minWidth: '280px', background: '#111' }}
         >
           {/* Header */}
-          <div className="p-3 border-bottom border-secondary d-flex align-items-center gap-2">
+          <div className="p-3 border-bottom border-secondary d-flex align-items-center justify-content-between gap-2">
             <div>
               <h5 className="mb-0 fw-bold text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
                 Messages
               </h5>
               <small className="text-muted">Direct messages</small>
             </div>
+            {/* Close Button */}
+            <button 
+              className="btn btn-link text-white-50 p-1.5 d-flex align-items-center justify-content-center border-0 outline-none text-decoration-none"
+              onClick={() => navigate('/home')}
+              style={{ borderRadius: '50%', background: 'rgba(255,255,255,0.06)', width: '32px', height: '32px' }}
+              title="Close Messages"
+            >
+              <FaTimes size={14} className="text-white" />
+            </button>
           </div>
 
           {/* Search new user */}
@@ -300,27 +310,39 @@ const MessagesPage = () => {
 
             {/* Chat header */}
             <div
-              className="d-flex align-items-center gap-3 px-4 py-3 border-bottom border-secondary"
+              className="d-flex align-items-center justify-content-between px-4 py-3 border-bottom border-secondary"
               style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', flexShrink: 0 }}
             >
-              {/* back button on mobile */}
-              <button
-                className="btn btn-sm d-md-none text-white border-0 p-0 me-1"
-                onClick={() => { clearTimeout(pollTimerRef.current); setActiveChat(null); }}
-              >
-                ←
-              </button>
-              <img
-                src={avatar(activeChat.userprofile)}
-                className="rounded-circle"
-                alt=""
-                style={{ width: 42, height: 42, objectFit: 'cover', cursor: 'pointer' }}
-                onClick={(e) => { e.stopPropagation(); navigate(`/profile/${activeChat.id}`); }}
-              />
-              <div onClick={(e) => { e.stopPropagation(); navigate(`/profile/${activeChat.id}`); }} style={{ cursor: 'pointer' }}>
-                <div className="fw-bold text-white" style={{ fontSize: 15 }}>{activeChat.username}</div>
-                <div className="text-muted" style={{ fontSize: 12 }}>Active now</div>
+              <div className="d-flex align-items-center gap-3">
+                {/* back button on mobile */}
+                <button
+                  className="btn btn-sm d-md-none text-white border-0 p-0 me-1"
+                  onClick={() => { clearTimeout(pollTimerRef.current); setActiveChat(null); }}
+                >
+                  ←
+                </button>
+                <img
+                  src={avatar(activeChat.userprofile)}
+                  className="rounded-circle"
+                  alt=""
+                  style={{ width: 42, height: 42, objectFit: 'cover', cursor: 'pointer' }}
+                  onClick={(e) => { e.stopPropagation(); navigate(`/profile/${activeChat.id}`); }}
+                />
+                <div onClick={(e) => { e.stopPropagation(); navigate(`/profile/${activeChat.id}`); }} style={{ cursor: 'pointer' }}>
+                  <div className="fw-bold text-white" style={{ fontSize: 15 }}>{activeChat.username}</div>
+                  <div className="text-muted" style={{ fontSize: 12 }}>Active now</div>
+                </div>
               </div>
+              
+              {/* Close Button */}
+              <button 
+                className="btn btn-link text-white-50 p-1.5 d-flex align-items-center justify-content-center border-0 outline-none text-decoration-none"
+                onClick={() => navigate('/home')}
+                style={{ borderRadius: '50%', background: 'rgba(255,255,255,0.06)', width: '32px', height: '32px' }}
+                title="Close Chat & Go Home"
+              >
+                <FaTimes size={14} className="text-white" />
+              </button>
             </div>
 
             {/* Message history */}

@@ -31,54 +31,87 @@ const ProfileSettings = () => {
 
 
   return (
-    <div className='d-flex'>
+    <div className='d-flex flex-column flex-md-row min-vh-100 bg-black text-white'>
         <SideComponent/>
-        <div style={{width:'25%',background:'black'}} className='border-end border-secondary'>
-            <ul className='flex-column nav' >
-                <h5 className='px-3 text-white mb-3 mt-3'>Settings</h5>
-                <div className='card bg-dark m-auto text-white px-2 py-3 mb-3 select-bar' style={{width:'90%',height:'20%',cursor:"pointer"}} onClick={()=>setselect("edit-password")}>
-                        <p>Acoount center</p>
-                        <p style={{fontSize:'12px',opacity:0.5}}>Manage your account setting and personal details</p>
-                        <span className='d-flex gap-2 align-items-center'><FaUser size={13} opacity={0.5}/> <p style={{fontSize:'12px',opacity:0.5,margin:0}}>personal details</p></span>
-                        <p style={{fontSize:'12px',opacity:0.5}}>password and security</p>
+        
+        {/* Desktop Sidebar Settings menu: hidden on mobile */}
+        <div style={{width:'280px', flexShrink: 0, background:'black'}} className='d-none d-md-block border-end border-secondary p-3'>
+            <h5 className='px-3 text-white mb-4 mt-3 fw-bold' style={{letterSpacing: '0.5px'}}>Settings</h5>
+            
+            {/* Account Center Card */}
+            <div 
+              className='card text-white px-3 py-3 mb-4 bg-dark-card border-dark-glow shadow-sm' 
+              style={{width:'92%', margin: '0 auto 24px auto', cursor:"pointer", borderRadius: '12px'}} 
+              onClick={()=>setselect("edit-password")}
+            >
+                <p className='fw-bold mb-1' style={{fontSize: '13px', color: '#0095f6'}}>Account Center</p>
+                <p className='mb-2 text-secondary' style={{fontSize:'11px', lineHeight: '1.4'}}>Manage your account settings, password, and security details</p>
+                <div className='d-flex gap-2 align-items-center mb-1'>
+                  <FaUser size={10} className='text-secondary'/> 
+                  <p style={{fontSize:'11px', margin:0}} className='text-secondary'>personal details</p>
                 </div>
+                <p style={{fontSize:'11px', margin:0}} className='text-secondary'>password and security</p>
+            </div>
+            
+            <ul className='flex-column nav gap-2 px-2'>
                 <li
-                    className={`nav-link select-bar text-white rounded mx-2 ${
-                      select === "edit-profile" ? "selected" : ""
-                    }`}
-                    style={{ paddingLeft: "40px", cursor: "pointer" }}
+                    className={`settings-link ${select === "edit-profile" ? "active" : ""}`}
                     onClick={() => setselect("edit-profile")}
                   >
                     Edit Profile
                   </li>
 
                   <li
-                    className={`nav-link select-bar text-white rounded mx-2 ${
-                      select === "edit-privacy" ? "selected" : ""
-                    }`}
-                    style={{ paddingLeft: "40px", cursor: "pointer" }}
+                    className={`settings-link ${select === "edit-privacy" ? "active" : ""}`}
                     onClick={() => setselect("edit-privacy")}
                   >
                     Privacy
                   </li>
 
                   <li
-                    className={`nav-link select-bar text-white rounded mx-2 ${
-                      select === "activity" ? "selected" : ""
-                    }`}
-                    style={{ paddingLeft: "40px", cursor: "pointer" }}
-                    onClick={() => setselect("activity")}
+                    className={`settings-link ${select === "edit-password" ? "active" : ""}`}
+                    onClick={() => setselect("edit-password")}
                   >
-                    Your Activity
+                    Personal Details
                   </li>
-                </ul>
+            </ul>
         </div>
-        <div className='container-fluid bg-black'>
-            {select==='edit-profile' && <EditProfile />}
-            {select==='edit-privacy' && <Privacy />}
-            {select==='edit-password' && <PersonalDetails />}
-
-
+        
+        {/* Mobile Sticky Settings Header: hidden on desktop */}
+        <div className="d-md-none bg-black border-bottom border-secondary px-3 py-3 sticky-top" style={{zIndex: 999}}>
+            <h5 className="text-white fw-bold mb-3" style={{fontSize: '18px'}}>Settings</h5>
+            <div className="d-flex gap-2 overflow-auto pb-1 no-scrollbar">
+                <button 
+                  className={`btn btn-sm px-3 py-2 text-white rounded-pill border-0 ${select === 'edit-profile' ? 'bg-primary fw-bold' : 'bg-dark'}`}
+                  style={{fontSize: '13px', whiteSpace: 'nowrap', transition: 'all 0.2s ease'}}
+                  onClick={() => setselect('edit-profile')}
+                >
+                  Edit Profile
+                </button>
+                <button 
+                  className={`btn btn-sm px-3 py-2 text-white rounded-pill border-0 ${select === 'edit-privacy' ? 'bg-primary fw-bold' : 'bg-dark'}`}
+                  style={{fontSize: '13px', whiteSpace: 'nowrap', transition: 'all 0.2s ease'}}
+                  onClick={() => setselect('edit-privacy')}
+                >
+                  Privacy
+                </button>
+                <button 
+                  className={`btn btn-sm px-3 py-2 text-white rounded-pill border-0 ${select === 'edit-password' ? 'bg-primary fw-bold' : 'bg-dark'}`}
+                  style={{fontSize: '13px', whiteSpace: 'nowrap', transition: 'all 0.2s ease'}}
+                  onClick={() => setselect('edit-password')}
+                >
+                  Personal Details
+                </button>
+            </div>
+        </div>
+        
+        {/* Main Content Pane */}
+        <div className='flex-grow-1 bg-black p-3 p-md-5 settings-content-mobile' style={{paddingBottom: '80px', overflowY: 'auto'}}>
+            <div className="mx-auto" style={{maxWidth: '700px'}}>
+                {select==='edit-profile' && <EditProfile />}
+                {select==='edit-privacy' && <Privacy />}
+                {select==='edit-password' && <PersonalDetails />}
+            </div>
         </div>
     </div>
   )

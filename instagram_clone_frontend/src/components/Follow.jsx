@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import ProfileHeader from './ProfileHeader'
 import { useNavigate } from 'react-router-dom'
 import { API_BASE_URL } from '../config'
+import { FaTimes } from 'react-icons/fa'
 
 const Follow = ({ onClose, type, userId }) => {
     const navigate = useNavigate()
@@ -42,20 +43,43 @@ const Follow = ({ onClose, type, userId }) => {
             zIndex: 9999
         }}>
             <div className='bg-dark position-relative d-flex flex-column gap-2 text-white p-2 follow-container' style={{ width: "35%", height: "60%", borderRadius: "20px" }}>
-                <button onClick={onClose} className='position-absolute btn btn-danger' style={{ top: 0, right: 0 }}>Close</button>
-                <p className='text-center mt-2'>{type}</p>
-                {users.map((user, val) => (
-                    <div key={val} className='d-flex justify-content-between align-items-center px-4 py-2 follow-bar rounded'>
-                        <div className='d-flex gap-3 align-items-center' onClick={() => navigateUserProfile(user.id)}
-                            style={{ cursor: "pointer" }}>
-                            <img src={user.profileurl} className='rounded-circle' style={{ width: '40px', height: '40px' }} />
-                            <p className='m-0' style={{ fontSize: '17px', fontFamily: 'cursive' }}>{user.username}</p>
-                        </div>
-                        <ProfileHeader
-                            user={user} />
+                <button
+                    onClick={onClose}
+                    className='position-absolute btn btn-link text-white-50 p-2 d-flex align-items-center justify-content-center border-0 outline-none text-decoration-none'
+                    style={{ top: '8px', right: '12px', zIndex: 10 }}
+                >
+                    <FaTimes size={18} className="text-white" />
+                </button>
 
-                    </div>
-                ))}
+                <div className="border-bottom border-secondary-custom py-2 text-center w-100">
+                    <span className="fw-bold text-white text-capitalize" style={{ fontSize: '15px', letterSpacing: '0.3px' }}>
+                        {type === 'follower' ? 'followers' : 'following'}
+                    </span>
+                </div>
+
+                <div className="flex-grow-1 overflow-auto py-2 px-2 no-scrollbar" style={{ width: '100%' }}>
+                    {users.length === 0 ? (
+                        <div className="text-center text-secondary py-5" style={{ fontSize: '13px' }}>
+                            No {type === 'follower' ? 'followers' : 'following'} yet.
+                        </div>
+                    ) : (
+                        users.map((user, val) => (
+                            <div key={val} className='d-flex justify-content-between align-items-center px-3 py-2.5 mb-1 rounded follow-bar transition-all'>
+                                <div className='d-flex gap-3 align-items-center' onClick={() => navigateUserProfile(user.id)}
+                                    style={{ cursor: "pointer" }}>
+                                    <img
+                                        src={user.profileurl || 'https://ui-avatars.com/api/?background=333&color=fff&name=U'}
+                                        className='rounded-circle border border-secondary'
+                                        style={{ width: '38px', height: '38px', objectFit: 'cover' }}
+                                        alt={user.username}
+                                    />
+                                    <span className='text-white fw-semibold' style={{ fontSize: '14.5px' }}>{user.username}</span>
+                                </div>
+                                <ProfileHeader user={user} />
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
         </div>
     )

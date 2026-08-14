@@ -22,6 +22,8 @@ import { Share2 } from 'lucide-react';
 import DownloadButton from '../components/DownloadButton';
 import { BiDotsVerticalRounded } from 'react-icons/bi';
 import MorePopup from '../components/MorePopup';
+import ShareModal from '../components/ShareModal';
+import CommentsModal from '../components/CommentsModal';
 import { API_BASE_URL } from '../config';
 function ReelsPage() {
   const navigate = useNavigate()
@@ -161,8 +163,8 @@ function ReelsPage() {
     return () => clearTimeout(delayDebounce);
   }, [shareSearchQuery, token]);
 
-  const handleShareReel = async (recipientId) => {
-    if (!selectedReel) return;
+  const handleShareReel = async (recipientId, msg) => {
+    if (!selectedReel) return false;
     try {
       const res = await fetch(`${API_BASE_URL}/api/messages/send`, {
         method: 'POST',
@@ -172,18 +174,14 @@ function ReelsPage() {
         },
         body: JSON.stringify({
           recipientId: recipientId,
-          content: shareMessage.trim() ? shareMessage.trim() : "Shared a reel",
+          content: msg && msg.trim() ? msg.trim() : "Shared a reel",
           reelId: selectedReel.id
         })
       });
-      if (res.ok) {
-        setSentStatus(prev => ({ ...prev, [recipientId]: true }));
-      } else {
-        alert("Failed to share reel");
-      }
+      return res.ok;
     } catch (err) {
       console.error(err);
-      alert("Error sharing reel");
+      return false;
     }
   };
 
@@ -388,189 +386,36 @@ function ReelsPage() {
           {!hasMore && <p>No more reels</p>}
         </div>
       </div>
-      {viewComment && <div className='position-absolute h-50 p-2 bg-dark d-flex justify-content-center align-items-center reels-comments-container'
-        style={{ top: "20%", right: "2%", width: "25%" }}
-        onClick={(e) => e.stopPropagation()}>
-        <Comment id={selectedReel.id} type={'reel'} /></div>}
-      {viewmore && <div className='position-absolute rounded p-2 bg-dark d-flex justify-content-center align-items-center'
-        style={{ bottom: "30%", right: "15%", width: "15%" }}>
-        <MorePopup id={selectedReel.id} token={token} type={'reels'} user={selectedReel.user}
+      {/* ── Comments Modal ── */}
+      <CommentsModal
+        isOpen={viewComment}
+        onClose={() => setviewComment(false)}
+        postId={selectedReel?.id}
+        postType="reel"
+      />
+
+      {/* ── More Options Modal ── */}
+      {viewmore && selectedReel && (
+        <MorePopup
+          id={selectedReel.id}
+          token={token}
+          type="reels"
+          user={selectedReel.user}
           close={() => {
-            setviewmore(false)
-            setselectedReel(null)
-          }} />
-      </div>}
+            setviewmore(false);
+            setselectedReel(null);
+          }}
+        />
+      )}
 
       {/* ── Share Reel Modal ── */}
-      {openShareModal && selectedReel && (
-        <div
-          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-          style={{
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            backdropFilter: 'blur(8px)',
-            zIndex: 99999
-          }}
-          onClick={() => setOpenShareModal(false)}
-        >
-          <div
-            className="card bg-dark text-white border-secondary rounded-4 shadow-lg p-4"
-            style={{
-              width: '100%',
-              maxWidth: '440px',
-              maxHeight: '80vh',
-              display: 'flex',
-              flexDirection: 'column',
-              animation: 'fadeIn 0.25s ease-out'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="d-flex align-items-center justify-content-between mb-3">
-              <h5 className="mb-0 fw-bold">Share Reel</h5>
-              <button
-                type="button"
-                className="btn-close btn-close-white"
-                onClick={() => setOpenShareModal(false)}
-              ></button>
-            </div>
-
-            {/* Reel Preview */}
-            <div className="d-flex align-items-center gap-3 p-2 mb-3 rounded-3 border" style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderColor: 'rgba(255,255,255,0.1)' }}>
-              <video
-                src={selectedReel.videoUrl}
-                className="rounded-2"
-                style={{ width: '50px', height: '65px', objectFit: 'cover' }}
-                muted
-                playsInline
-              />
-              <div style={{ minWidth: 0 }}>
-                <div className="fw-semibold text-white-50" style={{ fontSize: '12px' }}>Sharing Reel by</div>
-                <div className="fw-bold" style={{ fontSize: '14px' }}>@{selectedReel.user?.username}</div>
-                <div className="text-muted text-truncate" style={{ fontSize: '12px', maxWidth: '280px' }}>
-                  {selectedReel.caption || "No caption"}
-                </div>
-              </div>
-            </div>
-
-            {/* Optional message input */}
-            <div className="mb-3">
-              <input
-                type="text"
-                className="form-control bg-black text-white border-secondary rounded-3"
-                placeholder="Write a message..."
-                value={shareMessage}
-                onChange={(e) => setShareMessage(e.target.value)}
-                style={{ fontSize: '14px', border: '1px solid rgba(255,255,255,0.1)' }}
-              />
-            </div>
-
-            {/* Search Input */}
-            <div className="mb-3">
-              <div className="input-group">
-                <span className="input-group-text bg-black border-secondary text-secondary" style={{ border: '1px solid rgba(255,255,255,0.1)', borderRight: 'none' }}>
-                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  className="form-control bg-black text-white border-secondary"
-                  placeholder="Search friends..."
-                  value={shareSearchQuery}
-                  onChange={(e) => setShareSearchQuery(e.target.value)}
-                  style={{ fontSize: '14px', border: '1px solid rgba(255,255,255,0.1)', borderLeft: 'none' }}
-                />
-              </div>
-            </div>
-
-            {/* Friends/Searched list container */}
-            <div
-              className="flex-grow-1 overflow-auto pe-1"
-              style={{ minHeight: '180px', maxHeight: '300px', scrollbarWidth: 'thin' }}
-            >
-              {shareSearchQuery.trim() ? (
-                // Search Results
-                shareSearchResults.length === 0 ? (
-                  <div className="text-center text-muted py-4">No users found</div>
-                ) : (
-                  shareSearchResults.map(user => (
-                    <div
-                      key={user.id}
-                      className="d-flex align-items-center justify-content-between py-2 border-bottom"
-                      style={{ borderColor: 'rgba(255,255,255,0.05)' }}
-                    >
-                      <div className="d-flex align-items-center gap-3">
-                        <img
-                          src={user.userprofile || 'https://ui-avatars.com/api/?background=333&color=fff&name=' + user.username}
-                          className="rounded-circle"
-                          style={{ width: '38px', height: '38px', objectFit: 'cover' }}
-                          alt=""
-                        />
-                        <div>
-                          <div className="fw-semibold" style={{ fontSize: '14px' }}>{user.username}</div>
-                        </div>
-                      </div>
-
-                      <button
-                        className={`btn btn-sm px-3 rounded-pill fw-bold ${sentStatus[user.id] ? 'btn-secondary' : 'btn-danger'}`}
-                        disabled={sentStatus[user.id]}
-                        onClick={() => handleShareReel(user.id)}
-                        style={{
-                          fontSize: '12px',
-                          background: sentStatus[user.id] ? '#444' : 'linear-gradient(135deg, #e05d5d, #c0392b)',
-                          border: 'none'
-                        }}
-                      >
-                        {sentStatus[user.id] ? 'Sent ✓' : 'Send'}
-                      </button>
-                    </div>
-                  ))
-                )
-              ) : (
-                // Recent Conversations
-                recentChats.length === 0 ? (
-                  <div className="text-center text-muted py-4" style={{ fontSize: '13px' }}>
-                    No recent conversations.<br />Search a friend above!
-                  </div>
-                ) : (
-                  recentChats.map(chatUser => (
-                    <div
-                      key={chatUser.id}
-                      className="d-flex align-items-center justify-content-between py-2 border-bottom"
-                      style={{ borderColor: 'rgba(255,255,255,0.05)' }}
-                    >
-                      <div className="d-flex align-items-center gap-3">
-                        <img
-                          src={chatUser.userprofile || 'https://ui-avatars.com/api/?background=333&color=fff&name=' + chatUser.username}
-                          className="rounded-circle"
-                          style={{ width: '38px', height: '38px', objectFit: 'cover' }}
-                          alt=""
-                        />
-                        <div>
-                          <div className="fw-semibold" style={{ fontSize: '14px' }}>{chatUser.username}</div>
-                        </div>
-                      </div>
-
-                      <button
-                        className={`btn btn-sm px-3 rounded-pill fw-bold ${sentStatus[chatUser.id] ? 'btn-secondary' : 'btn-danger'}`}
-                        disabled={sentStatus[chatUser.id]}
-                        onClick={() => handleShareReel(chatUser.id)}
-                        style={{
-                          fontSize: '12px',
-                          background: sentStatus[chatUser.id] ? '#444' : 'linear-gradient(135deg, #e05d5d, #c0392b)',
-                          border: 'none'
-                        }}
-                      >
-                        {sentStatus[chatUser.id] ? 'Sent ✓' : 'Send'}
-                      </button>
-                    </div>
-                  ))
-                )
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <ShareModal
+        isOpen={openShareModal}
+        onClose={() => setOpenShareModal(false)}
+        contentType="reel"
+        contentData={selectedReel}
+        onSend={handleShareReel}
+      />
     </div>
   );
 }

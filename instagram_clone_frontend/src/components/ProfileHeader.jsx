@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useToast } from '../context/ToastContext';
 import { API_BASE_URL } from '../config';
 
-const ProfileHeader = ({ user }) => {
+const ProfileHeader = ({ user, isMobile }) => {
   const [following, setFollowing] = useState(false);
   const [requested, setRequested] = useState(false);
   const [followMsg, setFollowMsg] = useState('follow');
@@ -70,14 +70,25 @@ const ProfileHeader = ({ user }) => {
   }, [following, requested]);
 
   return (
-    <div>
+    <div className={isMobile ? "w-100" : ""}>
       {!user.own && (
         <button
-          className="btn text-white  py-0"
-          style={{ cursor: 'pointer', height: '30px' }}
+          className={`btn fw-semibold px-4 py-1.5 rounded-3 transition-all text-center border-0 ${
+            isMobile ? "w-100 py-2 text-white" : "text-white"
+          }`}
+          style={{ 
+            cursor: 'pointer', 
+            fontSize: '13.5px', 
+            minWidth: isMobile ? '100%' : '110px',
+            height: isMobile ? '38px' : '32px',
+            background: followMsg === 'follow' ? '#0095f6' : 'rgba(255,255,255,0.1)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
           onClick={() => followUser(user.id)}
         >
-          {followMsg}
+          {followMsg === 'follow' ? 'Follow' : followMsg === 'following' ? 'Following' : 'Requested'}
         </button>
       )}
     </div>

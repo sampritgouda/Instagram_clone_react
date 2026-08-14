@@ -8,6 +8,8 @@ import Save from './Save';
 import Comment from './Comment';
 import { BiDotsVerticalRounded } from 'react-icons/bi';
 import MorePopup from './MorePopup';
+import ShareModal from './ShareModal';
+import CommentsModal from './CommentsModal';
 import { API_BASE_URL } from '../config';
 
 function Feeds({ scrollcontainerref }) {
@@ -99,21 +101,23 @@ function Feeds({ scrollcontainerref }) {
     return () => clearTimeout(t);
   }, [shareSearchQuery, token]);
 
-  const handleSharePost = async (recipientId) => {
-    if (!sharePost) return;
+  const handleSharePost = async (recipientId, msg) => {
+    if (!sharePost) return false;
     try {
       const res = await fetch(`${API_BASE_URL}/api/messages/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           recipientId,
-          content: shareMessage.trim() ? shareMessage.trim() : 'Shared a post',
+          content: msg && msg.trim() ? msg.trim() : 'Shared a post',
           postId: sharePost.id
         })
       });
-      if (res.ok) setSentStatus(prev => ({ ...prev, [recipientId]: true }));
-      else alert('Failed to share post');
-    } catch (err) { console.error(err); alert('Error sharing post'); }
+      return res.ok;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
   };
 
   // Persist configurations to localStorage
@@ -497,8 +501,8 @@ function Feeds({ scrollcontainerref }) {
       )}
 
       {feedData.map((feed, index) => (
-        <div key={index} className="card mb-4 shadow-sm container bg-black text-white  position-relative"
-          style={{ borderBottom: "1px solid lightgrey" }}>
+        <div key={index} className="card mb-4 shadow-sm bg-black text-white position-relative border-0 w-100 mx-auto"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.1) !important" }}>
           <div className="d-flex gap-3 p-0 mb-2 align-items-center">
             <img
               src={feed.user.profilePicUrl}
@@ -623,131 +627,39 @@ function Feeds({ scrollcontainerref }) {
           )}
         </div>
       ))}
-      {loading && <p className='text-white text-center'>Loading more reels...</p>}
-      {!hasMore && <p className='text-white text-center'>No more reels</p>}
-      {viewcomment && <div className='position-absolute h-50 p-2 bg-dark d-flex justify-content-center align-items-center  reels-comments-container'
-        style={{ top: "18%", right: "10%", width: "25%" }}
-        onClick={(e) => e.stopPropagation()}>
-        <Comment id={selectedPost} type={'post'} /></div>}
+      {loading && <p className='text-white text-center py-3'>Loading more posts...</p>}
+      {!hasMore && <p className='text-white text-center py-3' style={{ fontSize: '13px', opacity: 0.5 }}>No more posts</p>}
 
-      {viewMore && <div className='position-absolute p-2 bg-dark d-flex justify-content-center align-items-center'
-        style={{ top: "18%", right: "20%", width: "15%" }}>
-        <MorePopup id={selectedPost.id} token={token} type={'posts'} user={selectedPost.user} close={() => {
-          setviewMore(false)
-          setselectedPost(null)
-        }} />
-      </div>}
+      {/* ── Comments Modal ── */}
+      <CommentsModal
+        isOpen={viewcomment}
+        onClose={() => setviewcomment(false)}
+        postId={selectedPost}
+        postType="post"
+      />
+
+      {/* ── More Options Modal ── */}
+      {viewMore && selectedPost && (
+        <MorePopup
+          id={selectedPost.id}
+          token={token}
+          type="posts"
+          user={selectedPost.user}
+          close={() => {
+            setviewMore(false);
+            setselectedPost(null);
+          }}
+        />
+      )}
 
       {/* ── Share Post Modal ── */}
-      {openShareModal && sharePost && (
-        <div
-          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-          style={{ backgroundColor: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(8px)', zIndex: 99999 }}
-          onClick={() => setOpenShareModal(false)}
-        >
-          <div
-            className="card bg-dark text-white border-secondary rounded-4 shadow-lg p-4"
-            style={{ width: '100%', maxWidth: '440px', maxHeight: '82vh', display: 'flex', flexDirection: 'column' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="d-flex align-items-center justify-content-between mb-3">
-              <h5 className="mb-0 fw-bold">Share Post</h5>
-              <button type="button" className="btn-close btn-close-white" onClick={() => setOpenShareModal(false)} />
-            </div>
-
-            {/* Post Preview */}
-            <div className="d-flex align-items-center gap-3 p-2 mb-3 rounded-3 border" style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderColor: 'rgba(255,255,255,0.1)' }}>
-              {sharePost.mediaType === 'canvas' ? (
-                <div style={{ width: '50px', height: '65px', borderRadius: '6px', background: sharePost.imageUrl, flexShrink: 0 }} />
-              ) : (
-                <img
-                  src={sharePost.imageUrl}
-                  className="rounded-2"
-                  style={{ width: '50px', height: '65px', objectFit: 'cover', flexShrink: 0 }}
-                  alt=""
-                />
-              )}
-              <div style={{ minWidth: 0 }}>
-                <div className="fw-semibold text-white-50" style={{ fontSize: '12px' }}>Sharing post by</div>
-                <div className="fw-bold" style={{ fontSize: '14px' }}>@{sharePost.user?.username}</div>
-                <div className="text-muted text-truncate" style={{ fontSize: '12px', maxWidth: '280px' }}>
-                  {sharePost.caption || 'No caption'}
-                </div>
-              </div>
-            </div>
-
-            {/* Optional message */}
-            <div className="mb-3">
-              <input
-                type="text"
-                className="form-control bg-black text-white border-secondary rounded-3"
-                placeholder="Write a message..."
-                value={shareMessage}
-                onChange={(e) => setShareMessage(e.target.value)}
-                style={{ fontSize: '14px', border: '1px solid rgba(255,255,255,0.1)' }}
-              />
-            </div>
-
-            {/* Search */}
-            <div className="mb-3">
-              <div className="input-group">
-                <span className="input-group-text bg-black border-secondary text-secondary" style={{ border: '1px solid rgba(255,255,255,0.1)', borderRight: 'none' }}>
-                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" /></svg>
-                </span>
-                <input
-                  type="text"
-                  className="form-control bg-black text-white border-secondary"
-                  placeholder="Search friends..."
-                  value={shareSearchQuery}
-                  onChange={(e) => setShareSearchQuery(e.target.value)}
-                  style={{ fontSize: '14px', border: '1px solid rgba(255,255,255,0.1)', borderLeft: 'none' }}
-                />
-              </div>
-            </div>
-
-            {/* User list */}
-            <div className="flex-grow-1 overflow-auto pe-1" style={{ maxHeight: '300px', scrollbarWidth: 'thin' }}>
-              {(shareSearchQuery.trim() ? shareSearchResults : recentChats).length === 0 ? (
-                <div className="text-center text-muted py-4" style={{ fontSize: '13px' }}>
-                  {shareSearchQuery.trim() ? 'No users found' : 'No recent conversations.\nSearch a friend above!'}
-                </div>
-              ) : (
-                (shareSearchQuery.trim() ? shareSearchResults : recentChats).map(u => (
-                  <div
-                    key={u.id}
-                    className="d-flex align-items-center justify-content-between py-2 border-bottom"
-                    style={{ borderColor: 'rgba(255,255,255,0.05)' }}
-                  >
-                    <div className="d-flex align-items-center gap-3">
-                      <img
-                        src={u.userprofile || `https://ui-avatars.com/api/?background=333&color=fff&name=${u.username}`}
-                        className="rounded-circle"
-                        style={{ width: '38px', height: '38px', objectFit: 'cover' }}
-                        alt=""
-                      />
-                      <div className="fw-semibold" style={{ fontSize: '14px' }}>{u.username}</div>
-                    </div>
-                    <button
-                      className="btn btn-sm px-3 rounded-pill fw-bold"
-                      disabled={sentStatus[u.id]}
-                      onClick={() => handleSharePost(u.id)}
-                      style={{
-                        fontSize: '12px',
-                        background: sentStatus[u.id] ? '#444' : 'linear-gradient(135deg,#e05d5d,#c0392b)',
-                        border: 'none',
-                        color: 'white'
-                      }}
-                    >
-                      {sentStatus[u.id] ? 'Sent ✓' : 'Send'}
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <ShareModal
+        isOpen={openShareModal}
+        onClose={() => setOpenShareModal(false)}
+        contentType="post"
+        contentData={sharePost}
+        onSend={handleSharePost}
+      />
     </div>
   );
 }

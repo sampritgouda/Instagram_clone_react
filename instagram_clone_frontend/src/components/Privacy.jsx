@@ -46,27 +46,41 @@ const Privacy = () => {
   };
 
   return (
-    <div className="container p-4 text-white">
-      <h4 className="mb-3">Privacy Settings</h4>
+    <div className="w-100 text-white">
+      <div className="mx-auto px-2" style={{ maxWidth: "600px" }}>
+        <h4 className="fw-bold mb-4 mt-2" style={{letterSpacing: '0.3px'}}>Privacy Settings</h4>
 
-      <div className="d-flex justify-content-between align-items-center bg-dark p-3 rounded">
-        <span>Private Account</span>
-        <div className="form-check form-switch">
-          <input
-            className="form-check-input"
-            type="checkbox"
-            id="privateAccountSwitch"
-            checked={isPrivate}
-            onChange={handleToggle}
-          />
+        <div className="bg-dark-card border-dark-glow p-4 rounded-4 mb-4 shadow-sm">
+          <div className="d-flex justify-content-between align-items-center">
+            <div>
+              <p className="fw-semibold mb-1" style={{fontSize: '15px'}}>Private Account</p>
+              <p className="text-secondary mb-0" style={{fontSize: '13px', lineHeight: '1.4'}}>
+                {isPrivate
+                  ? "Only your followers can see your posts and reels."
+                  : "Everyone can see your posts and reels."}
+              </p>
+            </div>
+            <div className="form-check form-switch ms-4">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="privateAccountSwitch"
+                checked={isPrivate}
+                onChange={handleToggle}
+                style={{width: '48px', height: '26px', cursor: 'pointer'}}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-dark-card border-dark-glow p-4 rounded-4 shadow-sm">
+          <p className="fw-semibold mb-2" style={{fontSize: '15px'}}>About Account Privacy</p>
+          <p className="text-secondary mb-0" style={{fontSize: '13px', lineHeight: '1.6'}}>
+            When your account is private, only people you approve can see your photos and videos.
+            Your existing followers won't be affected. Businesses cannot set their accounts to private.
+          </p>
         </div>
       </div>
-
-      <p className="mt-3 text-secondary" style={{ fontSize: "14px" }}>
-        {isPrivate
-          ? "Only your followers will be able to see your posts and reels."
-          : "Everyone can see your posts and reels."}
-      </p>
     </div>
   );
 };

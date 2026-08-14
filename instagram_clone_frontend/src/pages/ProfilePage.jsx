@@ -54,13 +54,13 @@ const ProfilePage = () => {
       <SideComponent />
       <div 
         className="container-fluid p-0 d-flex flex-column overflow-auto bg-black" 
-        style={{ maxHeight: '100vh' }}
+        style={{ maxHeight: '100vh', paddingBottom: '75px' }}
       >
         {/* Pass user down instead of id */}
         {user && <Profile user={user} />}
         
-        <div className='mt-5'>
-          <ul className="nav nav-tabs d-flex justify-content-center bg-black">
+        <div className='mt-4'>
+          <ul className="nav profile-tabs d-flex justify-content-center bg-black">
             <li className="nav-item">
               <button
                 className={`nav-link ${activeTab === 'post' ? 'active' : ''}`}
