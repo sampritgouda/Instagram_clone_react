@@ -5,9 +5,11 @@ import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import CreatePage from './pages/CreatePage'
 import { UploadProvider } from './context/UploadContext'
-import { UserProvider } from './context/UserContext'   // ⬅️ import
-import { ToastProvider } from './context/ToastContext' // ⬅️ import toast provider
+import { UserProvider, useUser } from './context/UserContext'
+import { ToastProvider } from './context/ToastContext'
 import UploadBanner from './components/UploadBanner'
+import ProtectedRoute from './components/ProtectedRoute'
+import AccountSwitcherModal from './components/AccountSwitcherModal'
 
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './App.css'
@@ -17,24 +19,40 @@ import ProfileSettings from './pages/ProfileSettings'
 import MessagesPage from './pages/MessagesPage'
 import NotificationsPage from './pages/NotificationsPage'
 
+const AppContent = () => {
+  const { isSwitcherOpen, setIsSwitcherOpen } = useUser();
+
+  return (
+    <>
+      <UploadBanner />
+      <AccountSwitcherModal 
+        isOpen={isSwitcherOpen} 
+        onClose={() => setIsSwitcherOpen(false)} 
+      />
+      <Routes>
+        {/* Public Routes */}
+        <Route path='/' element={<SignupPage />} />
+        <Route path='/login' element={<LoginPage />} />
+
+        {/* Protected Routes */}
+        <Route path='/home' element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+        <Route path='/create/:select' element={<ProtectedRoute><CreatePage /></ProtectedRoute>} />
+        <Route path='/reels' element={<ProtectedRoute><ReelsPage/></ProtectedRoute>} />
+        <Route path="/profile/:id/:tab?" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/profile/edit" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
+        <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+      </Routes>
+    </>
+  );
+};
+
 const App = () => {
   return (
     <ToastProvider>
       <UserProvider>
         <UploadProvider>
-          <UploadBanner />
-          <Routes>
-            <Route path='/' element={<SignupPage />} />
-            <Route path='/home' element={<HomePage />} />
-            <Route path='/login' element={<LoginPage />} />
-            <Route path='/create/:select' element={<CreatePage />} />
-            <Route path='/reels' element={<ReelsPage/>}/>
-            <Route path="/profile/:id/:tab?" element={<ProfilePage />} />
-            <Route path="/profile/edit" element={<ProfileSettings />} />
-            <Route path="/messages" element={<MessagesPage />} />
-            <Route path="/notifications" element={<NotificationsPage />} />
-
-          </Routes>
+          <AppContent />
         </UploadProvider>
       </UserProvider>
     </ToastProvider>

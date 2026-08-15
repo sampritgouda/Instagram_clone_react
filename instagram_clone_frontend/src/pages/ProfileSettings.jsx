@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react'
 import SideComponent from '../components/SideComponent'
-import { FaUser } from 'react-icons/fa'
+import { FaUser, FaSignOutAlt, FaExchangeAlt } from 'react-icons/fa'
 import EditProfile from '../components/EditProfile'
 import Privacy from '../components/Privacy'
-import ChangePassword from '../components/PersonalDetails'
 import PersonalDetails from '../components/PersonalDetails'
 import { API_BASE_URL } from '../config'
+import { useUser } from '../context/UserContext'
 
 const ProfileSettings = () => {
     const token = localStorage.getItem("token")
-    const id =localStorage.getItem("userId")
+    const id = localStorage.getItem("userId")
     const [user, setuser] = useState({})
     const [select, setselect] = useState('edit-profile')
+    const { logout, setIsSwitcherOpen } = useUser()
 
    const fetchUser = async () => {
        try {
@@ -29,12 +30,11 @@ const ProfileSettings = () => {
        fetchUser()
      },[])
 
-
   return (
     <div className='d-flex flex-column flex-md-row min-vh-100 bg-black text-white'>
         <SideComponent/>
         
-        {/* Desktop Sidebar Settings menu: hidden on mobile */}
+        {/* Desktop Sidebar Settings menu */}
         <div style={{width:'280px', flexShrink: 0, background:'black'}} className='d-none d-md-block border-end border-secondary p-3'>
             <h5 className='px-3 text-white mb-4 mt-3 fw-bold' style={{letterSpacing: '0.5px'}}>Settings</h5>
             
@@ -74,12 +74,38 @@ const ProfileSettings = () => {
                   >
                     Personal Details
                   </li>
+                  
+                  <hr className="border-secondary my-2" />
+
+                  <li
+                    className="settings-link text-primary fw-semibold d-flex align-items-center gap-2"
+                    onClick={() => setIsSwitcherOpen(true)}
+                  >
+                    <FaExchangeAlt size={14} /> Switch Accounts
+                  </li>
+
+                  <li
+                    className="settings-link text-danger fw-bold d-flex align-items-center gap-2"
+                    onClick={() => logout(false)}
+                  >
+                    <FaSignOutAlt size={14} /> Log Out
+                  </li>
             </ul>
         </div>
         
-        {/* Mobile Sticky Settings Header: hidden on desktop */}
+        {/* Mobile Sticky Settings Header */}
         <div className="d-md-none bg-black border-bottom border-secondary px-3 py-3 sticky-top" style={{zIndex: 999}}>
-            <h5 className="text-white fw-bold mb-3" style={{fontSize: '18px'}}>Settings</h5>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="text-white fw-bold mb-0" style={{fontSize: '18px'}}>Settings</h5>
+              <button 
+                className="btn btn-sm btn-outline-danger d-flex align-items-center gap-1.5 py-1 px-2.5 rounded-3 fw-bold"
+                onClick={() => logout(false)}
+                style={{fontSize: '12px'}}
+              >
+                <FaSignOutAlt size={12} /> Log Out
+              </button>
+            </div>
+
             <div className="d-flex gap-2 overflow-auto pb-1 no-scrollbar">
                 <button 
                   className={`btn btn-sm px-3 py-2 text-white rounded-pill border-0 ${select === 'edit-profile' ? 'bg-primary fw-bold' : 'bg-dark'}`}
@@ -102,6 +128,13 @@ const ProfileSettings = () => {
                 >
                   Personal Details
                 </button>
+                <button 
+                  className="btn btn-sm px-3 py-2 text-primary bg-dark rounded-pill border border-secondary fw-semibold"
+                  style={{fontSize: '13px', whiteSpace: 'nowrap'}}
+                  onClick={() => setIsSwitcherOpen(true)}
+                >
+                  <FaExchangeAlt size={12} className="me-1" /> Switch
+                </button>
             </div>
         </div>
         
@@ -111,6 +144,24 @@ const ProfileSettings = () => {
                 {select==='edit-profile' && <EditProfile />}
                 {select==='edit-privacy' && <Privacy />}
                 {select==='edit-password' && <PersonalDetails />}
+
+                {/* Mobile Bottom Logout & Account Switcher Card */}
+                <div className="d-md-none mt-5 pt-3 border-top border-secondary text-center">
+                  <div className="d-flex flex-column gap-2">
+                    <button 
+                      className="btn btn-outline-light w-100 py-2.5 d-flex align-items-center justify-content-center gap-2 fw-semibold rounded-3"
+                      onClick={() => setIsSwitcherOpen(true)}
+                    >
+                      <FaExchangeAlt size={16} /> Switch Accounts
+                    </button>
+                    <button 
+                      className="btn btn-danger w-100 py-2.5 d-flex align-items-center justify-content-center gap-2 fw-bold rounded-3"
+                      onClick={() => logout(false)}
+                    >
+                      <FaSignOutAlt size={16} /> Log Out
+                    </button>
+                  </div>
+                </div>
             </div>
         </div>
     </div>

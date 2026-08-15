@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
-
-
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import ProfileHeader from './ProfileHeader'
 import Follow from './Follow'
+import { FaCog, FaSignOutAlt, FaExchangeAlt } from 'react-icons/fa'
+import { useUser } from '../context/UserContext'
 
 const Profile = ({ user }) => {
   const [canview, setcanview] = useState(true)
@@ -11,11 +11,16 @@ const Profile = ({ user }) => {
   const [type, settype] = useState(null)
   const [followercount, setfollowercount] = useState()
   const [followingcount, setfollowingcount] = useState()
+
+  const { logout, setIsSwitcherOpen } = useUser()
+  const navigate = useNavigate()
+
   useEffect(() => {
     if (user.private && !user.followed && !user.own) setcanview(false)
     setfollowercount(user.followerCount)
     setfollowingcount(user.followingCount)
   }, [user])
+
   const popupdisplay = (poptype) => {
     setshowpopup(true)
     settype(poptype)
@@ -35,24 +40,50 @@ const Profile = ({ user }) => {
         </div>
         
         <div className="d-flex flex-column gap-3 flex-grow-1">
-          <div className="d-flex gap-4 align-items-center">
+          <div className="d-flex gap-3 align-items-center">
             <h3 className="text-white mb-0 fw-normal" style={{ fontSize: '28px', letterSpacing: '0.3px', fontFamily: "'Inter', sans-serif" }}>
               {user.username}
             </h3>
             {user.own ? (
-              <Link 
-                to="/profile/edit"
-                className="btn btn-sm text-white px-3 py-1.5 fw-semibold rounded-3 border-secondary-custom transition-all"
-                style={{ 
-                  background: 'rgba(255,255,255,0.1)', 
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  fontSize: '14px'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-              >
-                Edit profile
-              </Link>
+              <div className="d-flex align-items-center gap-2">
+                <Link 
+                  to="/profile/edit"
+                  className="btn btn-sm text-white px-3 py-1.5 fw-semibold rounded-3 border-secondary-custom transition-all"
+                  style={{ 
+                    background: 'rgba(255,255,255,0.1)', 
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    fontSize: '14px'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                >
+                  Edit profile
+                </Link>
+                <button 
+                  className="btn btn-sm text-white p-2 rounded-3 border-0"
+                  style={{ background: 'rgba(255,255,255,0.1)' }}
+                  onClick={() => setIsSwitcherOpen(true)}
+                  title="Switch accounts"
+                >
+                  <FaExchangeAlt size={16} />
+                </button>
+                <button 
+                  className="btn btn-sm text-white p-2 rounded-3 border-0"
+                  style={{ background: 'rgba(255,255,255,0.1)' }}
+                  onClick={() => navigate('/profile/edit')}
+                  title="Settings"
+                >
+                  <FaCog size={16} />
+                </button>
+                <button 
+                  className="btn btn-sm text-danger p-2 rounded-3 border-0"
+                  style={{ background: 'rgba(255,0,0,0.15)' }}
+                  onClick={() => logout(false)}
+                  title="Log out"
+                >
+                  <FaSignOutAlt size={16} />
+                </button>
+              </div>
             ) : (
               <ProfileHeader user={user} />
             )}
@@ -129,20 +160,40 @@ const Profile = ({ user }) => {
           <p className="text-white m-0" style={{ fontSize: '13.5px', whiteSpace: 'pre-wrap', opacity: 0.95, lineHeight: '1.4' }}>{user.bio}</p>
         </div>
 
-        {/* Full-width action button */}
+        {/* Action buttons */}
         <div className="px-1 mt-3">
           {user.own ? (
-            <Link 
-              to="/profile/edit"
-              className="btn text-white w-100 py-2 fw-semibold text-center border-0 rounded-3"
-              style={{ 
-                background: 'rgba(255,255,255,0.1)', 
-                fontSize: '13.5px',
-                letterSpacing: '0.2px'
-              }}
-            >
-              Edit profile
-            </Link>
+            <div className="d-flex gap-2 w-100">
+              <Link 
+                to="/profile/edit"
+                className="btn text-white flex-grow-1 py-2 fw-semibold text-center border-0 rounded-3"
+                style={{ 
+                  background: 'rgba(255,255,255,0.1)', 
+                  fontSize: '13.5px',
+                  letterSpacing: '0.2px'
+                }}
+              >
+                Edit profile
+              </Link>
+
+              <button 
+                className="btn text-white px-3 py-2 border-0 rounded-3"
+                style={{ background: 'rgba(255,255,255,0.1)' }}
+                onClick={() => setIsSwitcherOpen(true)}
+                title="Switch accounts"
+              >
+                <FaExchangeAlt size={16} />
+              </button>
+
+              <button 
+                className="btn text-danger px-3 py-2 border-0 rounded-3 fw-bold"
+                style={{ background: 'rgba(255,0,0,0.15)' }}
+                onClick={() => logout(false)}
+                title="Log out"
+              >
+                <FaSignOutAlt size={16} />
+              </button>
+            </div>
           ) : (
             <div className="w-100">
               <ProfileHeader user={user} isMobile={true} />
