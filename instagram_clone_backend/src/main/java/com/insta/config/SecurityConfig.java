@@ -47,7 +47,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // explicitly link bean
             .exceptionHandling(ex -> ex.authenticationEntryPoint(entryPoint))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/h2-console/**").permitAll()
+                .requestMatchers("/api/auth/**", "/h2-console/**", "/health", "/api/health").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // allow preflight
                 .anyRequest().authenticated()
             )
