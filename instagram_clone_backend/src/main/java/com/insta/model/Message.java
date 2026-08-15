@@ -41,4 +41,9 @@ public class Message {
     @JoinColumn(name = "replied_to_id")
     @JsonIgnore
     private Message repliedTo;
+
+    @Column(name = "is_read")
+    private Boolean isRead = false;
 }
+
+

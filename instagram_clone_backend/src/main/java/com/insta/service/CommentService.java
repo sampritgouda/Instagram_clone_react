@@ -28,6 +28,7 @@ public class CommentService {
 	private final PostRepository postRepository;
 	private final CommentRepository commentRepository;
 	private final Cloudinary cloudinary;
+	private final NotificationService notificationService;
 
 	public List<CommentDTO> getCommnetsByType(Long id, String type) {
 		List<Comment> comments = null;
@@ -95,6 +96,7 @@ public class CommentService {
 					comment.setRepliedTo(replied);
 			}
 			save = commentRepository.save(comment);
+			notificationService.createNotification(reel.getUser(), user, com.insta.model.Notification.NotificationType.COMMENT, null, reel, commentVal);
 		} else {
 			Post post = postRepository.findById(id).orElseThrow();
 			Comment comment = new Comment();
@@ -108,6 +110,8 @@ public class CommentService {
 					comment.setRepliedTo(replied);
 			}
 			save = commentRepository.save(comment);
+			notificationService.createNotification(post.getUser(), user, com.insta.model.Notification.NotificationType.COMMENT, post, null, commentVal);
+			notificationService.processMentions(user, commentVal, post);
 		}
 		CommentDTO newcomment = CommentDTO.builder().id(save.getId())
 				.userId(save.getUser().getId())

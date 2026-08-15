@@ -2,9 +2,11 @@ package com.insta.repository;
 
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import com.insta.model.Message;
 import com.insta.model.User;
 
@@ -19,4 +21,12 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     @Query("SELECT DISTINCT m.sender FROM Message m WHERE m.recipient.id = :uid")
     List<User> findSendersByRecipientId(@Param("uid") Long uid);
+
+    long countByRecipientIdAndIsReadFalse(Long recipientId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Message m SET m.isRead = true WHERE m.recipient.id = :recipientId AND m.sender.id = :senderId AND m.isRead = false")
+    void markMessagesAsRead(@Param("recipientId") Long recipientId, @Param("senderId") Long senderId);
 }
+

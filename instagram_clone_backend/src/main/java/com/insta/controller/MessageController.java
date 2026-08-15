@@ -155,6 +155,28 @@ public class MessageController {
     }
 
     /**
+     * GET /api/messages/unread-count
+     * Returns total unread messages count for the current user.
+     */
+    @GetMapping("/unread-count")
+    public ResponseEntity<?> getUnreadMessageCount(@RequestHeader("Authorization") String auth) {
+        try {
+            User me = userService.getUserByToken(auth);
+            if (me == null) {
+                return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+            }
+            long count = 0;
+            try {
+                count = messageRepository.countByRecipientIdAndIsReadFalse(me.getId());
+            } catch (Exception ignored) {
+            }
+            return ResponseEntity.ok(Map.of("count", count));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("count", 0));
+        }
+    }
+
+    /**
      * GET /api/messages/history/{recipientId}
      * Returns the full chronological chat history between the current user and the
      * given user.
@@ -168,6 +190,12 @@ public class MessageController {
             if (me == null) {
                 return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
             }
+            // Safely mark incoming messages from this user as read
+            try {
+                messageRepository.markMessagesAsRead(me.getId(), recipientId);
+            } catch (Exception ignored) {
+            }
+
             List<Message> messages = messageRepository.findChatHistory(me.getId(), recipientId);
             List<Map<String, Object>> result = messages.stream().map(this::formatMessage).collect(Collectors.toList());
             return ResponseEntity.ok(result);

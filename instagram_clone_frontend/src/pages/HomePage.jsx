@@ -6,10 +6,12 @@ import Feeds from '../components/Feeds';
 import SideComponent from '../components/SideComponent';
 import { FaPaperPlane, FaHeart } from 'react-icons/fa';
 import logo from '../assets/insta-logo.jpg';
+import { useNotifications } from '../context/NotificationContext';
 
 function HomePage() {
   const containerRef = useRef({})
   const navigate = useNavigate();
+  const { unreadCount, unreadMessageCount } = useNotifications();
   return (
     <div className='d-flex'>
       <SideComponent />
@@ -35,20 +37,62 @@ function HomePage() {
         {/* Notifications & Messages icons */}
         <div className="d-flex align-items-center gap-2">
           <button
-            className="btn p-0 border-0 bg-transparent text-white d-flex align-items-center justify-content-center"
+            className="btn p-0 border-0 bg-transparent text-white d-flex align-items-center justify-content-center position-relative"
             onClick={() => navigate('/notifications')}
             style={{ width: '36px', height: '36px', borderRadius: '50%' }}
             aria-label="Notifications"
           >
             <FaHeart size={20} />
+            {unreadCount > 0 && (
+              <span
+                className="position-absolute d-flex align-items-center justify-content-center text-white"
+                style={{
+                  top: '2px',
+                  right: '2px',
+                  minWidth: '16px',
+                  height: '16px',
+                  background: 'linear-gradient(135deg, #ff4d4d, #c0392b)',
+                  fontSize: '9px',
+                  fontWeight: 700,
+                  borderRadius: '50px',
+                  padding: '0 3px',
+                  border: '1.5px solid #000',
+                  boxShadow: '0 2px 5px rgba(255,77,77,0.6)',
+                  lineHeight: 1
+                }}
+              >
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </button>
           <button
-            className="btn p-0 border-0 bg-transparent text-white d-flex align-items-center justify-content-center"
+            className="btn p-0 border-0 bg-transparent text-white d-flex align-items-center justify-content-center position-relative"
             onClick={() => navigate('/messages')}
             style={{ width: '36px', height: '36px', borderRadius: '50%' }}
             aria-label="Messages"
           >
             <FaPaperPlane size={20} />
+            {unreadMessageCount > 0 && (
+              <span
+                className="position-absolute d-flex align-items-center justify-content-center text-white"
+                style={{
+                  top: '2px',
+                  right: '2px',
+                  minWidth: '16px',
+                  height: '16px',
+                  background: 'linear-gradient(135deg, #0095f6, #007bb5)',
+                  fontSize: '9px',
+                  fontWeight: 700,
+                  borderRadius: '50px',
+                  padding: '0 3px',
+                  border: '1.5px solid #000',
+                  boxShadow: '0 2px 5px rgba(0,149,246,0.6)',
+                  lineHeight: 1
+                }}
+              >
+                {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+              </span>
+            )}
           </button>
         </div>
       </div>

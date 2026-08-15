@@ -110,68 +110,10 @@ body {
     overflow-x: auto;
   }
 
-  /* Mobile Styles for PostPopup */
-  .post-popup-overlay {
-    background: rgba(0, 0, 0, 0.85) !important;
-    position: fixed !important;
-  }
-
-  .post-popup-close-btn {
-    top: 15px !important;
-    right: 15px !important;
-    z-index: 10001 !important;
-    border-radius: 20px !important;
-    font-size: 14px !important;
-    padding: 6px 16px !important;
-  }
-
-  .post-popup-wrapper {
-    flex-direction: column !important;
-    height: 100vh !important;
-    width: 100vw !important;
-    padding: 70px 15px 25px 15px !important;
-    justify-content: flex-start !important;
-    gap: 0px !important;
-    overflow-y: auto !important;
-  }
-
-  .post-popup-media-container {
-    width: 100% !important;
-    height: 35vh !important;
-    border-radius: 12px 12px 0 0 !important;
-    overflow: hidden !important;
-    flex-shrink: 0 !important;
-  }
-
-  .post-popup-details-container {
-    width: 100% !important;
-    height: auto !important;
-    min-height: 45vh !important;
-    border-radius: 0 0 12px 12px !important;
-    padding: 15px !important;
-    gap: 15px !important;
-    flex-grow: 1 !important;
-  }
-
-  .post-popup-comment-wrapper {
-    height: 250px !important;
-    overflow-y: auto !important;
-  }
-
-  .profile-right-container {
-    font-size: 12px !important;
-  }
-
-  .username {
-    font-size: 14px !important;
-  }
-
-  .follow-container {
-    width: 95% !important;
-  }
 
   /* Settings page - ensure content isn't hidden behind bottom nav */
   .settings-content-mobile {
+
     padding-bottom: 80px !important;
     min-height: calc(100vh - 120px);
     overflow-y: auto;
@@ -248,6 +190,16 @@ body {
   .follow-bar:hover {
     background-color: transparent !important;
   }
+
+  .messages-chat-panel {
+    height: 90vh;
+    max-height: 90vh;
+  }
+
+  .messages-inbox-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
 }
 
 /* Nav icon pop keyframe (outside media query so it works everywhere) */
@@ -281,6 +233,22 @@ body {
   }
 }
 
+/* ── PostPopup Sheet Animations ── */
+@keyframes ppSlideUp {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ppFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
 
 
 .sidebar-link:hover {
@@ -543,3 +511,322 @@ body {
   color: #ffffff !important;
   border-top: 1.5px solid #ffffff !important;
 }
+
+
+/* ══════════════════════════════════════════════
+   PostPopup — Base (Desktop) Styles
+   Centered modal, side-by-side layout
+══════════════════════════════════════════════ */
+
+/* Backdrop */
+.pp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.80);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9998;
+  animation: ppFadeIn 0.2s ease forwards;
+}
+
+/* Centered modal card */
+.pp-sheet {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(90vw, 920px);
+  max-height: 88vh;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  z-index: 9999;
+  background: #0a0a0a;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.75);
+  animation: ppFadeIn 0.2s ease forwards;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Hide mobile drag handle on desktop */
+.pp-drag-handle-wrapper { display: none; }
+
+/* ── Media — left 55% ── */
+.pp-media-wrapper {
+  width: 55%;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pp-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Mute button */
+.pp-mute-btn {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  border-radius: 99px;
+  padding: 7px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s;
+}
+.pp-mute-btn:active { background: rgba(0,0,0,0.8); }
+
+/* ── Right panel ── */
+.pp-right-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0a0a0a;
+  border-left: 1px solid rgba(255,255,255,0.07);
+}
+
+/* ── Header ── */
+.pp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+
+.pp-header-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pp-avatar-ring {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.pp-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #0a0a0a;
+  display: block;
+}
+
+.pp-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.pp-username {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.1px;
+  line-height: 1.2;
+}
+
+.pp-fullname {
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.2;
+}
+
+.pp-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Icon Buttons ── */
+.pp-icon-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pp-icon-btn:active {
+  background: rgba(255,255,255,0.1);
+  transform: scale(0.9);
+}
+
+.pp-close-btn { color: rgba(255,255,255,0.6); }
+.pp-close-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+/* ── Action Bar ── */
+.pp-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px 0;
+  flex-shrink: 0;
+}
+
+.pp-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pp-actions-right {
+  display: flex;
+  align-items: center;
+}
+
+.pp-action-icon { color: #ffffff; }
+
+/* ── Like Count ── */
+.pp-like-count {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.85);
+  padding: 0 16px 8px;
+  flex-shrink: 0;
+}
+
+.pp-like-count span {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* ── Caption ── */
+.pp-caption {
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.85);
+  padding: 0 16px 10px;
+  flex-shrink: 0;
+}
+
+.pp-caption-username {
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.pp-caption-text { font-weight: 400; }
+
+.pp-more-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: rgba(255,255,255,0.5);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* ── Divider ── */
+.pp-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: 4px 0;
+  flex-shrink: 0;
+}
+
+/* ── Comments ── */
+.pp-comments-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 16px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.pp-comments-wrapper::-webkit-scrollbar { display: none; }
+
+/* ══════════════════════════════════════════════
+   PostPopup — Mobile overrides (≤768px)
+   Bottom sheet, full-width, single column
+══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .pp-overlay {
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .pp-sheet {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    max-height: 95dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 20px 20px 0 0;
+    flex-direction: column;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.6);
+    animation: ppSlideUp 0.35s cubic-bezier(0.34, 1.1, 0.64, 1) forwards;
+    border: none;
+    padding-bottom: 24px;
+  }
+
+  .pp-drag-handle-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 6px;
+  }
+
+  .pp-drag-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.18);
+  }
+
+  .pp-media-wrapper {
+    width: 100%;
+    aspect-ratio: 4/5;
+    height: auto;
+  }
+
+  .pp-right-panel {
+    flex: none;
+    border-left: none;
+    overflow: visible;
+  }
+
+  .pp-comments-wrapper {
+    flex: none;
+    min-height: 120px;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .profile-right-container { font-size: 12px; }
+  .username { font-size: 14px; }
+  .follow-container { width: 95%; }
+}
+

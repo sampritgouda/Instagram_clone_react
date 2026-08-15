@@ -3,11 +3,13 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaHome, FaUser, FaPaperPlane, FaPlusSquare, FaCog, FaVideo, FaHeart, FaSearch, FaBars, FaRegBookmark, FaExchangeAlt, FaSignOutAlt, FaTimes, FaDownload } from 'react-icons/fa';
 import logo from '../assets/insta-logo.jpg';
 import { useUser } from '../context/UserContext';
+import { useNotifications } from '../context/NotificationContext';
 
 function Sidebar({ onNotificationClick, onSearchClick }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { profileImage, setIsSwitcherOpen, logout, openInstallModal } = useUser();
+  const { unreadCount, unreadMessageCount } = useNotifications();
   const userId = localStorage.getItem("userId");
   
   const [more, setmore] = useState(false);
@@ -121,7 +123,41 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
 
         <li className="nav-item mb-3">
           <Link className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3" to="/messages">
-            <FaPaperPlane size={20} /><span>Messages</span>
+            <span className="position-relative d-inline-flex align-items-center justify-content-center">
+              <FaPaperPlane size={20} />
+              {unreadMessageCount > 0 && (
+                <span
+                  className="position-absolute d-flex align-items-center justify-content-center text-white"
+                  style={{
+                    top: '-6px',
+                    right: '-8px',
+                    minWidth: '17px',
+                    height: '17px',
+                    background: 'linear-gradient(135deg, #0095f6, #007bb5)',
+                    fontSize: '9.5px',
+                    fontWeight: 700,
+                    borderRadius: '50px',
+                    padding: '0 4px',
+                    border: '1.5px solid #000',
+                    boxShadow: '0 2px 6px rgba(0,149,246,0.5)',
+                    lineHeight: 1
+                  }}
+                >
+                  {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                </span>
+              )}
+            </span>
+            <span className="d-flex align-items-center gap-2">
+              Messages
+              {unreadMessageCount > 0 && (
+                <span
+                  className="badge bg-primary rounded-pill px-2 py-1"
+                  style={{ fontSize: '10px', fontWeight: 700 }}
+                >
+                  {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                </span>
+              )}
+            </span>
           </Link>
         </li>
 
@@ -139,7 +175,41 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
 
         <li className="nav-item mb-3">
           <Link className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3" to="/notifications">
-            <FaHeart size={20} /> <span>Notifications</span>
+            <span className="position-relative d-inline-flex align-items-center justify-content-center">
+              <FaHeart size={20} />
+              {unreadCount > 0 && (
+                <span
+                  className="position-absolute d-flex align-items-center justify-content-center text-white"
+                  style={{
+                    top: '-6px',
+                    right: '-8px',
+                    minWidth: '17px',
+                    height: '17px',
+                    background: 'linear-gradient(135deg, #ff4d4d, #c0392b)',
+                    fontSize: '9.5px',
+                    fontWeight: 700,
+                    borderRadius: '50px',
+                    padding: '0 4px',
+                    border: '1.5px solid #000',
+                    boxShadow: '0 2px 6px rgba(255,77,77,0.5)',
+                    lineHeight: 1
+                  }}
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </span>
+            <span className="d-flex align-items-center gap-2">
+              Notifications
+              {unreadCount > 0 && (
+                <span
+                  className="badge bg-danger rounded-pill px-2 py-1"
+                  style={{ fontSize: '10px', fontWeight: 700 }}
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </span>
           </Link>
         </li>
 

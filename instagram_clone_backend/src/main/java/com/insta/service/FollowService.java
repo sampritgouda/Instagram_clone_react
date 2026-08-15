@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.insta.model.FollowRequest;
 import com.insta.model.Follower;
 import com.insta.model.User;
+import com.insta.model.Notification.NotificationType;
 import com.insta.repository.FollowRequestRepository;
 import com.insta.repository.FollowerRepository;
 import com.insta.repository.UserRepository;
@@ -20,6 +21,7 @@ public class FollowService {
     private final UserRepository userRepo;
     private final FollowerRepository followRepo;
     private final FollowRequestRepository requestRepo;
+    private final NotificationService notificationService;
 
     @Transactional
     public void handleFollow(User follower, User target) {
@@ -38,6 +40,7 @@ public class FollowService {
                     .followedAt(LocalDateTime.now())
                     .build();
             followRepo.save(follow);
+            notificationService.createNotification(target, follower, NotificationType.FOLLOW, null, null, null);
             return ;
         }
 
@@ -49,6 +52,7 @@ public class FollowService {
                     .status(FollowRequest.RequestStatus.PENDING)
                     .build();
             requestRepo.save(request);
+            notificationService.createNotification(target, follower, NotificationType.FOLLOW_REQUEST, null, null, null);
             return;
         }
 

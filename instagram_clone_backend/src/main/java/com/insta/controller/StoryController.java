@@ -25,12 +25,14 @@ import com.insta.repository.UserRepository;
 import com.insta.security.JwtUtil;
 import com.insta.service.StoryService;
 import com.insta.service.UserService;
+
 import lombok.RequiredArgsConstructor;
+
+import com.insta.service.NotificationService;
 
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/stories")
-
 public class StoryController {
 
     private final UserService userService;
@@ -38,10 +40,10 @@ public class StoryController {
     private final Cloudinary cloudinary;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
-   private final StoryRepository storyRepository;
-   private final StoryService storyService;
-   private final StoryViewRepository storyViewRepository;
-  
+    private final StoryRepository storyRepository;
+    private final StoryService storyService;
+    private final StoryViewRepository storyViewRepository;
+    private final NotificationService notificationService;
 
     @PostMapping("/add")
     public ResponseEntity<?> createStory(
@@ -104,13 +106,30 @@ public class StoryController {
 			storyView.setStory(story);
 			storyViewRepository.save(storyView);
 			return ResponseEntity.ok().build();
-			
 		} catch (Exception e) {
 			return ResponseEntity.badRequest().build();
 		}
     }
-    
-    
-    
 
+    @PostMapping("/{storyId}/like")
+    public ResponseEntity<?> likeStory(@RequestHeader(value = "Authorization", required = false) String authorization, @PathVariable("storyId") Long id) {
+        try {
+            if (authorization == null || authorization.isBlank()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Missing Authorization header"));
+            }
+            User user = userService.getUserByToken(authorization);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid user token"));
+            }
+            Story story = storyRepository.findById(id).orElse(null);
+            if (story == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Story not found with ID " + id));
+            }
+            notificationService.createStoryNotification(story.getUser(), user, story);
+            return ResponseEntity.ok(Map.of("message", "Story liked successfully"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Failed to like story"));
+        }
+    }
 }

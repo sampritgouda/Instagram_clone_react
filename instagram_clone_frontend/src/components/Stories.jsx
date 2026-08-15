@@ -1,21 +1,44 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { FaEye, FaChevronLeft, FaChevronRight, FaTimes } from 'react-icons/fa';
+import { FaEye, FaChevronLeft, FaChevronRight, FaTimes, FaHeart } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import DeleteButton from './DeleteButton';
 import { API_BASE_URL } from '../config';
+import { useToast } from '../context/ToastContext';
 
 function Stories() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [usersStories, setUsersStories] = useState([]);
   const [storyviewcount, setstoryviewcount] = useState({});
   const [currentUserIndex, setCurrentUserIndex] = useState(null);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(null);
   const [storySeen, setStorySeen] = useState({});
+  const [likedStories, setLikedStories] = useState({});
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
   const videoRef = useRef(null);
   const token = localStorage.getItem("token");
+
+  const likeStory = async (e, storyId) => {
+    e.stopPropagation();
+    try {
+      const isAlreadyLiked = likedStories[storyId];
+      setLikedStories((prev) => ({ ...prev, [storyId]: !isAlreadyLiked }));
+
+      const authHeader = token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : '';
+
+      await fetch(`${API_BASE_URL}/api/stories/${storyId}/like`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        },
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const navigateUserProfile = (id) => {
     closeStory();
@@ -423,6 +446,27 @@ function Stories() {
                   }}
                 />
               )}
+            </div>
+
+            {/* ── BOTTOM OVERLAY: LIKE STORY BUTTON & INPUT ── */}
+            <div
+              className="position-absolute bottom-0 start-0 w-100 p-3 d-flex align-items-center justify-content-between gap-3"
+              style={{
+                zIndex: 20,
+                background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)'
+              }}
+            >
+              <div className="flex-grow-1 border border-white border-opacity-25 rounded-pill px-3 py-2 text-white-50 small" style={{ fontSize: '13px' }}>
+                Send message...
+              </div>
+              <button
+                className="btn text-white p-1 border-0 bg-transparent transition-all d-flex align-items-center justify-content-center"
+                onClick={(e) => likeStory(e, currentStory.id)}
+                title="Like Story"
+                style={{ cursor: 'pointer' }}
+              >
+                <FaHeart size={26} color={likedStories[currentStory.id] ? '#ff4d4d' : '#ffffff'} />
+              </button>
             </div>
           </div>
 

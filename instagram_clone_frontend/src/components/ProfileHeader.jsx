@@ -59,8 +59,10 @@ const ProfileHeader = ({ user, isMobile }) => {
   };
 
   useEffect(() => {
-    setFollowing(user.followed || false);
-    setRequested(user.requested || false);
+    if (user) {
+      setFollowing(user.followed || false);
+      setRequested(user.requested || false);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -69,9 +71,14 @@ const ProfileHeader = ({ user, isMobile }) => {
     else setFollowMsg('follow');
   }, [following, requested]);
 
+  if (!user) return null;
+
+  const currentUserId = localStorage.getItem('userId');
+  const isOwn = user.own || (currentUserId && String(user.id) === String(currentUserId));
+
   return (
     <div className={isMobile ? "w-100" : ""}>
-      {!user.own && (
+      {!isOwn && (
         <button
           className={`btn fw-semibold px-4 py-1.5 rounded-3 transition-all text-center border-0 ${
             isMobile ? "w-100 py-2 text-white" : "text-white"

@@ -188,7 +188,7 @@ const MessagesPage = () => {
       >
         {/* ── Left: Inbox ── */}
         <div
-          className={`d-flex flex-column border-end border-secondary ${activeChat ? 'd-none d-md-flex' : 'd-flex'}`}
+          className={`d-flex flex-column border-end border-secondary messages-inbox-panel ${activeChat ? 'd-none d-md-flex' : 'd-flex'}`}
           style={{ width: '340px', minWidth: '280px', background: '#111' }}
         >
           {/* Header */}
@@ -306,7 +306,7 @@ const MessagesPage = () => {
 
         {/* ── Right: Active chat ── */}
         {activeChat ? (
-          <div className="d-flex flex-column flex-grow-1" style={{ minWidth: 0 }}>
+          <div className="d-flex flex-column flex-grow-1 messages-chat-panel" style={{ minWidth: 0 }}>
 
             {/* Chat header */}
             <div

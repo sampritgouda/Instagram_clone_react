@@ -22,6 +22,8 @@ import com.insta.repository.ReelRepository;
 import com.insta.repository.UserRepository;
 import com.insta.security.JwtUtil;
 
+import com.insta.service.NotificationService;
+
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -34,6 +36,7 @@ public class LikeController {
 	private final LikeRepository likeRepository;
 	private final ReelRepository reelRepository;
 	private final PostRepository postRepository;
+	private final NotificationService notificationService;
 
 	@PostMapping()
 	public ResponseEntity<?> setReelLike(@RequestHeader("Authorization") String authHeader,@RequestBody Map<String,String> map)
@@ -63,6 +66,7 @@ public class LikeController {
 				like = new Like();
 				like.setPost(post);
 				like.setUser(user);
+				notificationService.createNotification(post.getUser(), user, com.insta.model.Notification.NotificationType.LIKE, post, null, null);
 			}
 			else
 			{
@@ -70,6 +74,7 @@ public class LikeController {
 			 like = new Like();
 			like.setReel(reel);
 			like.setUser(user);
+			notificationService.createNotification(reel.getUser(), user, com.insta.model.Notification.NotificationType.LIKE, null, reel, null);
 			}
 			likeRepository.save(like);
 			return ResponseEntity.ok("success");

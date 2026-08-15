@@ -7,6 +7,7 @@ import CreatePage from './pages/CreatePage'
 import { UploadProvider } from './context/UploadContext'
 import { UserProvider, useUser } from './context/UserContext'
 import { ToastProvider } from './context/ToastContext'
+import { NotificationProvider } from './context/NotificationContext'
 import UploadBanner from './components/UploadBanner'
 import ProtectedRoute from './components/ProtectedRoute'
 import AccountSwitcherModal from './components/AccountSwitcherModal'
@@ -57,9 +58,11 @@ const App = () => {
   return (
     <ToastProvider>
       <UserProvider>
-        <UploadProvider>
-          <AppContent />
-        </UploadProvider>
+        <NotificationProvider>
+          <UploadProvider>
+            <AppContent />
+          </UploadProvider>
+        </NotificationProvider>
       </UserProvider>
     </ToastProvider>
   )

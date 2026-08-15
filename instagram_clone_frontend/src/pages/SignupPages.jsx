@@ -4,18 +4,19 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "../context/ToastContext";
 import { useUser } from "../context/UserContext";
 import { API_BASE_URL } from "../config";
-import { FaEye, FaEyeSlash, FaExclamationCircle } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaExclamationCircle, FaCheck, FaTimes } from "react-icons/fa";
 import logo from "../assets/insta-logo.jpg";
 
 function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Field-specific and form-level error states
-  const [errors, setErrors] = useState({ name: "", email: "", password: "", form: "" });
+  const [errors, setErrors] = useState({ name: "", email: "", password: "", confirmPassword: "", form: "" });
 
   const navigate = useNavigate();
   const { addToast } = useToast();
@@ -29,8 +30,31 @@ function SignupPage() {
     }
   }, [navigate]);
 
+  // Strict RFC-compliant email regex
+  const isValidEmail = (val) => {
+    return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val.trim());
+  };
+
+  // Password strength logic
+  const calculatePasswordStrength = (pass) => {
+    if (!pass) return { score: 0, label: "", color: "" };
+    let score = 0;
+    if (pass.length >= 6) score += 1;
+    if (pass.length >= 10) score += 1;
+    if (/[A-Z]/.test(pass)) score += 1;
+    if (/[0-9]/.test(pass)) score += 1;
+    if (/[^a-zA-Z0-9]/.test(pass)) score += 1;
+
+    if (score <= 1) return { score: 20, label: "Weak", color: "#dc3545" };
+    if (score === 2) return { score: 40, label: "Fair", color: "#ffc107" };
+    if (score === 3 || score === 4) return { score: 75, label: "Good", color: "#0dcaf0" };
+    return { score: 100, label: "Strong", color: "#198754" };
+  };
+
+  const strength = calculatePasswordStrength(password);
+
   const validate = () => {
-    const newErrors = { name: "", email: "", password: "", form: "" };
+    const newErrors = { name: "", email: "", password: "", confirmPassword: "", form: "" };
     let isValid = true;
 
     // Username Validation
@@ -49,8 +73,8 @@ function SignupPage() {
     if (!email.trim()) {
       newErrors.email = "Email address is required";
       isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      newErrors.email = "Please enter a valid email address";
+    } else if (!isValidEmail(email)) {
+      newErrors.email = "Please enter a valid email address (e.g. name@example.com)";
       isValid = false;
     }
 
@@ -60,6 +84,15 @@ function SignupPage() {
       isValid = false;
     } else if (password.length < 6) {
       newErrors.password = "Password must be at least 6 characters long";
+      isValid = false;
+    }
+
+    // Confirm Password Validation
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your password";
+      isValid = false;
+    } else if (confirmPassword !== password) {
+      newErrors.confirmPassword = "Passwords do not match";
       isValid = false;
     }
 
@@ -145,7 +178,7 @@ function SignupPage() {
           <p className="text-secondary small mb-0">Sign up to see photos and videos from your friends.</p>
         </div>
 
-        {/* ── SIGNUP FORM (NO REQUIRED ATTR) ── */}
+        {/* ── SIGNUP FORM ── */}
         <form onSubmit={handleSignup} noValidate>
           {/* Top Form Alert Error Banner */}
           {errors.form && (
@@ -207,7 +240,7 @@ function SignupPage() {
           </div>
 
           {/* Password Field */}
-          <div className="mb-4">
+          <div className="mb-3">
             <label className="form-label text-secondary small fw-medium mb-1">Password</label>
             <div className="position-relative">
               <input
@@ -233,9 +266,62 @@ function SignupPage() {
                 {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
               </button>
             </div>
+
+            {/* Password Strength Indicator */}
+            {password && (
+              <div className="mt-2">
+                <div className="d-flex align-items-center justify-content-between mb-1" style={{ fontSize: "11px" }}>
+                  <span className="text-secondary">Password strength:</span>
+                  <span className="fw-bold" style={{ color: strength.color }}>{strength.label}</span>
+                </div>
+                <div className="progress" style={{ height: "4px", background: "rgba(255,255,255,0.1)" }}>
+                  <div
+                    className="progress-bar transition-all"
+                    role="progressbar"
+                    style={{ width: `${strength.score}%`, backgroundColor: strength.color }}
+                  />
+                </div>
+              </div>
+            )}
+
             {errors.password && (
               <div className="text-danger small mt-1.5 d-flex align-items-center gap-1" style={{ fontSize: "12.5px" }}>
                 <FaExclamationCircle size={12} /> {errors.password}
+              </div>
+            )}
+          </div>
+
+          {/* Confirm Password Field */}
+          <div className="mb-4">
+            <label className="form-label text-secondary small fw-medium mb-1">Confirm Password</label>
+            <div className="position-relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                className={`form-control bg-black text-white py-2.5 px-3 rounded-3 pe-5 ${
+                  errors.confirmPassword ? "border-danger" : "border-secondary"
+                }`}
+                placeholder="Re-enter password"
+                value={confirmPassword}
+                disabled={loading}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                }}
+                style={{ fontSize: "14px" }}
+              />
+              {confirmPassword && (
+                <span className="position-absolute top-50 end-0 translate-middle-y me-3 pointer-events-none">
+                  {confirmPassword === password ? (
+                    <FaCheck className="text-success" size={14} />
+                  ) : (
+                    <FaTimes className="text-danger" size={14} />
+                  )}
+                </span>
+              )}
+            </div>
+            {errors.confirmPassword && (
+              <div className="text-danger small mt-1.5 d-flex align-items-center gap-1" style={{ fontSize: "12.5px" }}>
+                <FaExclamationCircle size={12} /> {errors.confirmPassword}
               </div>
             )}
           </div>
@@ -276,3 +362,4 @@ function SignupPage() {
 }
 
 export default SignupPage;
+

@@ -1,18 +1,83 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '../context/NotificationContext';
 import SideComponent from '../components/SideComponent';
+import PostPopup from '../components/PostPopup';
 import { API_BASE_URL } from '../config';
-import { FaTimes, FaHeart, FaUserPlus, FaCheck, FaTrashAlt, FaBell } from 'react-icons/fa';
+import {
+  FaTimes,
+  FaHeart,
+  FaComment,
+  FaAt,
+  FaUserPlus,
+  FaUserCheck,
+  FaCheck,
+  FaTrashAlt,
+  FaBell,
+  FaCheckDouble,
+  FaFilm,
+  FaRegImage,
+  FaHistory
+} from 'react-icons/fa';
+
+// Helper component to render media thumbnail image or default fallback icon
+const NotifMediaThumbnail = ({ notif, size = 42 }) => {
+  const [imgError, setImgError] = useState(false);
+
+  const mediaUrl = notif?.post?.imageUrl || notif?.post?.posturl || notif?.post?.mediaUrl
+    || notif?.reel?.videoUrl || notif?.reel?.reelurl || notif?.reel?.mediaUrl
+    || notif?.story?.mediaUrl;
+
+  const isReel = !!notif?.reel || notif?.post?.mediaType === 'video';
+  const isStory = !!notif?.story || notif?.type === 'STORY_LIKE';
+  const isPost = !!notif?.post;
+
+  if (!isPost && !isReel && !isStory) return null;
+
+  if (mediaUrl && !imgError) {
+    return (
+      <img
+        src={mediaUrl}
+        alt="Thumbnail"
+        className="rounded-2 flex-shrink-0"
+        style={{ width: size, height: size, objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)' }}
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
+  // Default fallback icon when image is not present or failed to load
+  return (
+    <div
+      className="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0"
+      style={{
+        width: size,
+        height: size,
+        background: isReel
+          ? 'linear-gradient(135deg, rgba(224,93,93,0.25), rgba(192,57,43,0.35))'
+          : isStory
+            ? 'linear-gradient(135deg, rgba(255,193,7,0.25), rgba(253,126,20,0.35))'
+            : 'linear-gradient(135deg, rgba(13,110,253,0.25), rgba(0,86,179,0.35))',
+        border: '1px solid rgba(255,255,255,0.18)',
+        color: '#fff'
+      }}
+      title={isReel ? 'Reel' : isStory ? 'Story' : 'Post'}
+    >
+      {isReel ? <FaFilm size={Math.round(size * 0.45)} /> : isStory ? <FaHistory size={Math.round(size * 0.45)} /> : <FaRegImage size={Math.round(size * 0.45)} />}
+    </div>
+  );
+};
 
 const NotificationsPage = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
+  const { markAllReadLocally } = useNotifications();
 
   const [notifications, setNotifications] = useState([]);
-  const [selectedNotif, setSelectedNotif] = useState(null);
-  const [isRequested, setIsRequested] = useState({});
+  const [selectedPostFeed, setSelectedPostFeed] = useState(null);
+  const [handledRequests, setHandledRequests] = useState({});
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // 'all', 'pending', 'handled'
+  const [filter, setFilter] = useState('all');
 
   // ── auth guard ──
   useEffect(() => {
@@ -29,13 +94,8 @@ const NotificationsPage = () => {
       if (resp.ok) {
         const data = await resp.json();
         setNotifications(data);
-        const initReq = {};
-        data.forEach((req) => {
-          initReq[req.id] = true;
-        });
-        setIsRequested(initReq);
       }
-    } catch (_) {}
+    } catch (_) { }
     setLoading(false);
   }, [token]);
 
@@ -43,8 +103,43 @@ const NotificationsPage = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // ── confirm / delete request ──
-  const confirmRequest = async (isConfirm, id) => {
+  // ── Auto mark all as read when page opens ──
+  useEffect(() => {
+    const autoMarkRead = async () => {
+      if (!token) return;
+      try {
+        const resp = await fetch(`${API_BASE_URL}/api/user/notifications/read-all`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (resp.ok) {
+          // Reset badge in sidebar
+          markAllReadLocally();
+          // Mark all locally so unread indicator disappears
+          setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+        }
+      } catch (_) { }
+    };
+    // Slight delay so notifications load first
+    const timer = setTimeout(autoMarkRead, 800);
+    return () => clearTimeout(timer);
+  }, [token, markAllReadLocally]);
+
+  // ── mark all as read ──
+  const markAllAsRead = async () => {
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/user/notifications/read-all`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (resp.ok) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      }
+    } catch (_) { }
+  };
+
+  // ── confirm / delete follow request ──
+  const confirmRequest = async (isConfirm, notifId, requestId) => {
     try {
       const resp = await fetch(`${API_BASE_URL}/api/user/confirm`, {
         method: 'POST',
@@ -52,12 +147,12 @@ const NotificationsPage = () => {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id, isConfirm }),
+        body: JSON.stringify({ id: requestId || notifId, isConfirm }),
       });
       if (resp.ok) {
-        setIsRequested((prev) => ({ ...prev, [id]: false }));
+        setHandledRequests((prev) => ({ ...prev, [notifId]: true }));
       }
-    } catch (_) {}
+    } catch (_) { }
   };
 
   // ── helpers ──
@@ -79,164 +174,250 @@ const NotificationsPage = () => {
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
+  const getNotifText = (n) => {
+    switch (n.type) {
+      case 'LIKE':
+        return n.reel ? 'liked your reel' : 'liked your post';
+      case 'STORY_LIKE':
+        return 'liked your story';
+      case 'COMMENT':
+        return `commented: "${n.text || ''}"`;
+      case 'MENTION':
+        return `mentioned you: "${n.text || ''}"`;
+      case 'FOLLOW':
+        return 'started following you';
+      case 'FOLLOW_REQUEST':
+        return 'wants to follow you';
+      default:
+        return 'interacted with your profile';
+    }
+  };
+
+  const getBadgeIcon = (type) => {
+    switch (type) {
+      case 'LIKE':
+        return { icon: <FaHeart size={10} color="#fff" />, bg: 'linear-gradient(135deg, #ff4d4d, #dc3545)' };
+      case 'STORY_LIKE':
+        return { icon: <FaHeart size={10} color="#fff" />, bg: 'linear-gradient(135deg, #d63384, #fd7e14)' };
+      case 'COMMENT':
+        return { icon: <FaComment size={10} color="#fff" />, bg: 'linear-gradient(135deg, #0d6efd, #0056b3)' };
+      case 'MENTION':
+        return { icon: <FaAt size={10} color="#fff" />, bg: 'linear-gradient(135deg, #ffc107, #fd7e14)' };
+      case 'FOLLOW':
+        return { icon: <FaUserCheck size={10} color="#fff" />, bg: 'linear-gradient(135deg, #198754, #146c43)' };
+      case 'FOLLOW_REQUEST':
+        return { icon: <FaUserPlus size={10} color="#fff" />, bg: 'linear-gradient(135deg, #fd7e14, #d63384)' };
+      default:
+        return { icon: <FaBell size={10} color="#fff" />, bg: '#6c757d' };
+    }
+  };
+
+  // Convert post/reel inside notification into PostPopup feed object format
+  const getPopupFeed = (notif) => {
+    if (!notif) return null;
+    if (notif.post) {
+      const url = notif.post.imageUrl || notif.post.posturl || notif.post.mediaUrl || null;
+      const isVid = notif.post.mediaType === 'video' || (url && (url.includes('/video/upload/') || url.endsWith('.mp4')));
+      return {
+        id: notif.post.id,
+        mediaUrl: url,
+        mediaType: isVid ? 'video' : 'image',
+        caption: notif.post.caption || '',
+        likeCount: notif.post.likeCount || 0,
+        user: notif.post.user || notif.actor || notif.recipient,
+      };
+    }
+    if (notif.reel) {
+      const url = notif.reel.videoUrl || notif.reel.reelurl || notif.reel.mediaUrl || null;
+      return {
+        id: notif.reel.id,
+        mediaUrl: url,
+        mediaType: 'video',
+        caption: notif.reel.caption || '',
+        likeCount: notif.reel.likeCount || 0,
+        user: notif.reel.user || notif.actor || notif.recipient,
+      };
+    }
+    return null;
+  };
+
+  const handleDpClick = (e, userId) => {
+    e.stopPropagation();
+    if (userId) {
+      navigate(`/profile/${userId}`);
+    }
+  };
+
+  const handleNotifDivClick = (notif) => {
+    const feedObj = getPopupFeed(notif);
+    if (feedObj) {
+      setSelectedPostFeed(feedObj);
+    } else {
+      const userObj = notif.actor || notif.requester;
+      if (userObj?.id) {
+        navigate(`/profile/${userObj.id}`);
+      }
+    }
+  };
+
   const filteredNotifications = notifications.filter((n) => {
-    if (filter === 'pending') return isRequested[n.id];
-    if (filter === 'handled') return !isRequested[n.id];
+    if (filter === 'likes') return n.type === 'LIKE' || n.type === 'STORY_LIKE';
+    if (filter === 'comments') return n.type === 'COMMENT' || n.type === 'MENTION';
+    if (filter === 'follows') return n.type === 'FOLLOW' || n.type === 'FOLLOW_REQUEST';
     return true;
   });
 
-  // ── render ──
   return (
     <div className="d-flex" style={{ height: '100vh', background: '#0a0a0a' }}>
       <SideComponent />
 
-      {/* ── Main Notifications Panel ── */}
+      {/* ── Main Notifications Panel (Centered Full-Width Container) ── */}
       <div
-        className="d-flex flex-grow-1"
+        className="d-flex flex-column flex-grow-1 mx-auto"
         style={{
-          marginLeft: '0',
-          background: 'linear-gradient(135deg, #0d0d0d 0%, #111 100%)',
+          maxWidth: '680px',
+          width: '100%',
+          background: '#0d0d0d',
+          borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
           overflow: 'hidden',
         }}
       >
-        {/* ── Left: Notification List ── */}
-        <div
-          className={`d-flex flex-column border-end border-secondary ${selectedNotif ? 'd-none d-md-flex' : 'd-flex'}`}
-          style={{ width: '380px', minWidth: '300px', maxWidth: '100%', background: '#111' }}
-        >
-          {/* Header */}
-          <div className="p-3 border-bottom border-secondary">
-            <div className="d-flex align-items-center justify-content-between mb-3">
-              <div>
-                <h5
-                  className="mb-0 fw-bold text-white"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  Notifications
-                </h5>
-                <small className="text-muted">Follow requests & activity</small>
-              </div>
+        {/* Header */}
+        <div className="p-3 border-bottom border-secondary border-opacity-25 bg-black bg-opacity-40">
+          <div className="d-flex align-items-center justify-content-between mb-3">
+            <div>
+              <h5
+                className="mb-0 fw-bold text-white fs-5"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                Notifications
+              </h5>
+              <small className="text-secondary">Activity & requests</small>
+            </div>
+            <div className="d-flex align-items-center gap-2">
+              <button
+                className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5 py-1.5 px-3 rounded-3 text-white-50 border-secondary"
+                onClick={markAllAsRead}
+                title="Mark all as read"
+                style={{ fontSize: '12px' }}
+              >
+                <FaCheckDouble size={13} /> Mark Read
+              </button>
               <button
                 className="btn btn-link text-white-50 p-0 d-flex align-items-center justify-content-center border-0 text-decoration-none"
                 onClick={() => navigate('/home')}
                 style={{
                   borderRadius: '50%',
                   background: 'rgba(255,255,255,0.06)',
-                  width: '32px',
-                  height: '32px',
+                  width: '34px',
+                  height: '34px',
                 }}
                 title="Close Notifications"
               >
-                <FaTimes size={14} className="text-white" />
+                <FaTimes size={15} className="text-white" />
               </button>
-            </div>
-
-            {/* Filter pills */}
-            <div className="d-flex gap-2">
-              {[
-                { key: 'all', label: 'All' },
-                { key: 'pending', label: 'Pending' },
-                { key: 'handled', label: 'Handled' },
-              ].map((f) => (
-                <button
-                  key={f.key}
-                  onClick={() => setFilter(f.key)}
-                  className="border-0 px-3 py-1 rounded-pill"
-                  style={{
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    letterSpacing: '0.3px',
-                    background:
-                      filter === f.key
-                        ? 'linear-gradient(135deg, #e05d5d, #c0392b)'
-                        : 'rgba(255,255,255,0.08)',
-                    color: filter === f.key ? '#fff' : 'rgba(255,255,255,0.6)',
-                    cursor: 'pointer',
-                    transition: 'all 0.25s ease',
-                    boxShadow:
-                      filter === f.key ? '0 2px 12px rgba(224,93,93,0.3)' : 'none',
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
             </div>
           </div>
 
-          {/* Notification list */}
-          <div
-            className="flex-grow-1 overflow-auto"
-            style={{ scrollbarWidth: 'none' }}
-          >
-            {loading ? (
-              <div className="d-flex justify-content-center align-items-center py-5">
-                <div className="spinner-border text-secondary" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-              </div>
-            ) : filteredNotifications.length === 0 ? (
-              <div
-                className="text-center text-muted py-5"
-                style={{ fontSize: 13 }}
+          {/* Filter pills */}
+          <div className="d-flex gap-2 overflow-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'likes', label: 'Likes' },
+              { key: 'comments', label: 'Comments' },
+              { key: 'follows', label: 'Follows' },
+            ].map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className="border-0 px-3.5 py-1.5 rounded-pill"
+                style={{
+                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  letterSpacing: '0.3px',
+                  background:
+                    filter === f.key
+                      ? 'linear-gradient(135deg, #e05d5d, #c0392b)'
+                      : 'rgba(255,255,255,0.08)',
+                  color: filter === f.key ? '#fff' : 'rgba(255,255,255,0.6)',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease',
+                  boxShadow: filter === f.key ? '0 2px 12px rgba(224,93,93,0.3)' : 'none',
+                  whiteSpace: 'nowrap'
+                }}
               >
-                <div style={{ fontSize: 48, opacity: 0.4 }}>
-                  <FaBell />
-                </div>
-                <p className="mt-3 mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  {filter === 'all'
-                    ? 'No notifications yet'
-                    : filter === 'pending'
-                    ? 'No pending requests'
-                    : 'No handled requests'}
-                </p>
-                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)' }}>
-                  When people interact with you, you'll see it here
-                </p>
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Notification list */}
+        <div
+          className="flex-grow-1 overflow-auto p-2"
+          style={{ scrollbarWidth: 'none' }}
+        >
+          {loading ? (
+            <div className="d-flex justify-content-center align-items-center py-5">
+              <div className="spinner-border text-secondary" role="status">
+                <span className="visually-hidden">Loading...</span>
               </div>
-            ) : (
-              filteredNotifications.map((notif) => (
-                <button
+            </div>
+          ) : filteredNotifications.length === 0 ? (
+            <div className="text-center text-muted py-5 px-3" style={{ fontSize: 13 }}>
+              <div style={{ fontSize: 48, opacity: 0.35 }}>
+                <FaBell />
+              </div>
+              <p className="mt-3 mb-1 text-white-50 fw-medium fs-6">
+                No notifications found
+              </p>
+              <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.25)' }}>
+                When people like, comment, mention or follow you, you'll see it here
+              </p>
+            </div>
+          ) : (
+            filteredNotifications.map((notif) => {
+              const userObj = notif.actor || notif.requester || {};
+              const badge = getBadgeIcon(notif.type);
+
+              return (
+                <div
                   key={notif.id}
-                  onClick={() => setSelectedNotif(notif)}
-                  className="w-100 d-flex align-items-center gap-3 px-3 py-3 border-0 text-start"
+                  onClick={() => handleNotifDivClick(notif)}
+                  className="w-100 d-flex align-items-center justify-content-between gap-3 px-3 py-3 rounded-3 mb-1 border-0 text-start position-relative transition-all"
                   style={{
-                    background:
-                      selectedNotif?.id === notif.id
-                        ? 'rgba(255,255,255,0.08)'
-                        : 'transparent',
+                    background: notif.isRead ? 'rgba(255,255,255,0.02)' : 'rgba(224,93,93,0.07)',
                     color: 'white',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    borderLeft:
-                      selectedNotif?.id === notif.id
-                        ? '3px solid #e05d5d'
-                        : '3px solid transparent',
+                    borderLeft: !notif.isRead ? '3px solid #ff4d4d' : '3px solid transparent',
                   }}
                   onMouseEnter={(e) => {
-                    if (selectedNotif?.id !== notif.id)
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
                   }}
                   onMouseLeave={(e) => {
-                    if (selectedNotif?.id !== notif.id)
-                      e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.background = notif.isRead ? 'rgba(255,255,255,0.02)' : 'rgba(224,93,93,0.07)';
                   }}
                 >
-                  {/* Avatar with badge */}
-                  <div className="position-relative" style={{ flexShrink: 0 }}>
-                    <img
-                      src={avatar(notif.requester?.profilePicUrl)}
-                      className="rounded-circle"
-                      alt=""
-                      style={{
-                        width: 48,
-                        height: 48,
-                        objectFit: 'cover',
-                        border: isRequested[notif.id]
-                          ? '2px solid #e05d5d'
-                          : '2px solid rgba(255,255,255,0.1)',
-                      }}
-                    />
-                    {isRequested[notif.id] && (
+                  <div className="d-flex align-items-center gap-3 flex-grow-1" style={{ minWidth: 0 }}>
+                    {/* DP / Avatar with type badge (Clicking DP goes to user profile) */}
+                    <div
+                      className="position-relative"
+                      style={{ flexShrink: 0, cursor: 'pointer' }}
+                      onClick={(e) => handleDpClick(e, userObj.id)}
+                      title={`View ${userObj.username}'s profile`}
+                    >
+                      <img
+                        src={avatar(userObj.profilePicUrl)}
+                        className="rounded-circle"
+                        alt={userObj.username}
+                        style={{
+                          width: 48,
+                          height: 48,
+                          objectFit: 'cover',
+                          border: '2px solid rgba(255,255,255,0.12)',
+                        }}
+                      />
                       <span
                         className="position-absolute d-flex align-items-center justify-content-center"
                         style={{
@@ -245,241 +426,87 @@ const NotificationsPage = () => {
                           width: 20,
                           height: 20,
                           borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #e05d5d, #c0392b)',
+                          background: badge.bg,
                           border: '2px solid #111',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.5)'
                         }}
                       >
-                        <FaUserPlus size={9} color="#fff" />
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div className="d-flex justify-content-between align-items-center">
-                      <span className="fw-semibold" style={{ fontSize: 14 }}>
-                        {notif.requester?.username || 'Unknown'}
-                      </span>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
-                        {formatTime(notif.createdAt)}
+                        {badge.icon}
                       </span>
                     </div>
-                    <div
-                      className="text-muted"
-                      style={{
-                        fontSize: 12,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {isRequested[notif.id]
-                        ? 'wants to follow you'
-                        : 'Follow request handled ✓'}
-                    </div>
-                  </div>
 
-                  {/* Quick action dots */}
-                  {isRequested[notif.id] && (
-                    <div
-                      className="d-flex align-items-center gap-1"
-                      style={{ flexShrink: 0 }}
-                    >
-                      <span
+                    {/* Info text */}
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="d-flex justify-content-between align-items-center mb-0.5">
+                        <span
+                          className="fw-semibold text-truncate text-white"
+                          style={{ fontSize: 14, maxWidth: '240px', cursor: 'pointer' }}
+                          onClick={(e) => handleDpClick(e, userObj.id)}
+                        >
+                          {userObj.username || 'User'}
+                        </span>
+                        <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.35)' }}>
+                          {formatTime(notif.createdAt)}
+                        </span>
+                      </div>
+                      <div
+                        className="text-white-50"
                         style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          background: '#e05d5d',
-                          animation: 'pulse 2s infinite',
+                          fontSize: 13,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                         }}
-                      />
+                      >
+                        {getNotifText(notif)}
+                      </div>
                     </div>
-                  )}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* ── Right: Detail Panel ── */}
-        {selectedNotif ? (
-          <div
-            className="d-flex flex-column flex-grow-1 align-items-center justify-content-center"
-            style={{ minWidth: 0, padding: '24px' }}
-          >
-            {/* back on mobile */}
-            <div className="w-100 d-md-none mb-3">
-              <button
-                className="btn btn-sm text-white border-0 p-0 d-flex align-items-center gap-2"
-                onClick={() => setSelectedNotif(null)}
-                style={{ fontSize: 14 }}
-              >
-                ← Back to notifications
-              </button>
-            </div>
-
-            {/* Profile card */}
-            <div
-              className="d-flex flex-column align-items-center text-center"
-              style={{
-                maxWidth: 400,
-                width: '100%',
-                padding: '40px 32px',
-                borderRadius: 20,
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                backdropFilter: 'blur(20px)',
-                animation: 'notifCardIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-              }}
-            >
-              <img
-                src={avatar(selectedNotif.requester?.profilePicUrl)}
-                className="rounded-circle mb-3"
-                alt=""
-                style={{
-                  width: 88,
-                  height: 88,
-                  objectFit: 'cover',
-                  border: '3px solid rgba(224,93,93,0.4)',
-                  cursor: 'pointer',
-                }}
-                onClick={() =>
-                  navigate(`/profile/${selectedNotif.requester?.id}`)
-                }
-              />
-
-              <h5
-                className="fw-bold text-white mb-1"
-                style={{ fontSize: 18, cursor: 'pointer' }}
-                onClick={() =>
-                  navigate(`/profile/${selectedNotif.requester?.id}`)
-                }
-              >
-                {selectedNotif.requester?.username}
-              </h5>
-
-              <p
-                className="text-muted mb-4"
-                style={{ fontSize: 13 }}
-              >
-                {isRequested[selectedNotif.id]
-                  ? 'Wants to follow you'
-                  : 'This request has been handled'}
-              </p>
-
-              {/* Action buttons */}
-              {isRequested[selectedNotif.id] ? (
-                <div className="d-flex gap-3 w-100 justify-content-center">
-                  <button
-                    onClick={() => confirmRequest(true, selectedNotif.id)}
-                    className="btn d-flex align-items-center gap-2 px-4 py-2"
-                    style={{
-                      background: 'linear-gradient(135deg, #e05d5d, #c0392b)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 12,
-                      fontWeight: 600,
-                      fontSize: 14,
-                      boxShadow: '0 4px 18px rgba(224,93,93,0.35)',
-                      transition: 'all 0.25s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow =
-                        '0 6px 24px rgba(224,93,93,0.45)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow =
-                        '0 4px 18px rgba(224,93,93,0.35)';
-                    }}
-                  >
-                    <FaCheck size={14} /> Confirm
-                  </button>
-                  <button
-                    onClick={() => confirmRequest(false, selectedNotif.id)}
-                    className="btn d-flex align-items-center gap-2 px-4 py-2"
-                    style={{
-                      background: 'rgba(255,255,255,0.08)',
-                      color: 'rgba(255,255,255,0.7)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: 12,
-                      fontWeight: 600,
-                      fontSize: 14,
-                      transition: 'all 0.25s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    <FaTrashAlt size={13} /> Delete
-                  </button>
-                </div>
-              ) : (
-                <div className="d-flex flex-column align-items-center gap-2">
-                  <div
-                    className="d-flex align-items-center gap-2 px-3 py-2 rounded-pill"
-                    style={{
-                      background: 'rgba(25,135,84,0.15)',
-                      color: '#198754',
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
-                  >
-                    <FaCheck size={12} /> Request handled
                   </div>
-                  <button
-                    className="btn btn-link text-muted text-decoration-none mt-2"
-                    style={{ fontSize: 13 }}
-                    onClick={() =>
-                      navigate(`/profile/${selectedNotif.requester?.id}`)
-                    }
-                  >
-                    View Profile →
-                  </button>
+
+                  {/* Inline Follow Request Action Buttons */}
+                  {notif.type === 'FOLLOW_REQUEST' ? (
+                    <div className="d-flex align-items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      {handledRequests[notif.id] ? (
+                        <span className="badge bg-success bg-opacity-25 text-success small py-1.5 px-2.5 rounded-pill fw-semibold">
+                          <FaCheck size={11} className="me-1" /> Handled
+                        </span>
+                      ) : (
+                        <>
+                          <button
+                            className="btn btn-sm text-white py-1 px-3 rounded-3 fw-semibold"
+                            style={{ fontSize: '12.5px', background: '#0095f6', border: 'none' }}
+                            onClick={() => confirmRequest(true, notif.id)}
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            className="btn btn-sm btn-outline-secondary py-1 px-2.5 rounded-3 text-white-50 border-secondary"
+                            style={{ fontSize: '12.5px' }}
+                            onClick={() => confirmRequest(false, notif.id)}
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    /* Media Thumbnail with Default Fallback Icon */
+                    <NotifMediaThumbnail notif={notif} size={42} />
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          /* Empty state */
-          <div
-            className="flex-grow-1 d-none d-md-flex flex-column align-items-center justify-content-center"
-            style={{ color: 'rgba(255,255,255,0.2)' }}
-          >
-            <div
-              style={{
-                width: 100,
-                height: 100,
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.03)',
-                border: '2px solid rgba(255,255,255,0.06)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 20,
-              }}
-            >
-              <FaHeart size={36} style={{ opacity: 0.3 }} />
-            </div>
-            <p
-              className="mt-1 mb-1 fw-semibold"
-              style={{ fontSize: 18, color: 'rgba(255,255,255,0.5)' }}
-            >
-              Your Notifications
-            </p>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)' }}>
-              Select a notification to see details
-            </p>
-          </div>
-        )}
+              );
+            })
+          )}
+        </div>
       </div>
+
+      {/* ── Post / Reel Popup Modal ── */}
+      {selectedPostFeed && (
+        <PostPopup
+          feed={selectedPostFeed}
+          onclose={() => setSelectedPostFeed(null)}
+        />
+      )}
 
       {/* ── Styles ── */}
       <style>{`
@@ -487,21 +514,6 @@ const NotificationsPage = () => {
         * { box-sizing: border-box; }
         body { background: #0a0a0a !important; }
         ::-webkit-scrollbar { display: none; }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.3); }
-        }
-
-        @keyframes notifCardIn {
-          from { transform: scale(0.9) translateY(12px); opacity: 0; }
-          to { transform: scale(1) translateY(0); opacity: 1; }
-        }
-
-        /* Mobile: notification list full width */
-        @media (max-width: 767.98px) {
-          .border-end { border-right: none !important; }
-        }
       `}</style>
     </div>
   );
