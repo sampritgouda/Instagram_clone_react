@@ -14,4 +14,8 @@ public class SearchDTO {
 	private Long id;
 	private String username;
 	private String userprofile;
+	private String lastMessage;
+	private String lastMessageTime;
+	private long unreadCount;
 }
+

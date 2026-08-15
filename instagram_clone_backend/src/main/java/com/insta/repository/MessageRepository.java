@@ -24,9 +24,15 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     long countByRecipientIdAndIsReadFalse(Long recipientId);
 
+    long countByRecipientIdAndSenderIdAndIsReadFalse(Long recipientId, Long senderId);
+
+    @Query("SELECT m FROM Message m WHERE m.sender.id = :uid OR m.recipient.id = :uid ORDER BY m.createdAt DESC")
+    List<Message> findAllUserMessages(@Param("uid") Long uid);
+
     @Modifying
     @Transactional
     @Query("UPDATE Message m SET m.isRead = true WHERE m.recipient.id = :recipientId AND m.sender.id = :senderId AND m.isRead = false")
     void markMessagesAsRead(@Param("recipientId") Long recipientId, @Param("senderId") Long senderId);
 }
+
 

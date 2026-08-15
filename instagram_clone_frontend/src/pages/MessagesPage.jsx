@@ -78,10 +78,13 @@ const MessagesPage = () => {
     setActiveChat(partner);
     setMessages([]);
     setInput('');
-    fetchHistory(partner.id).then(() => startPolling(partner.id));
-    // add to conversations list if not already there
+    fetchHistory(partner.id).then(() => {
+      startPolling(partner.id);
+      fetchConversations();
+    });
+    // Reset unread count locally when opening chat
     setConversations(prev =>
-      prev.some(c => c.id === partner.id) ? prev : [partner, ...prev]
+      prev.map(c => c.id === partner.id ? { ...c, unreadCount: 0 } : c)
     );
   };
 
@@ -286,16 +289,52 @@ const MessagesPage = () => {
                   onMouseEnter={e => { if (activeChat?.id !== c.id) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
                   onMouseLeave={e => { if (activeChat?.id !== c.id) e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <img
-                    src={avatar(c.userprofile)}
-                    className="rounded-circle"
-                    alt=""
-                    style={{ width: 44, height: 44, objectFit: 'cover', flexShrink: 0 }}
-                  />
-                  <div style={{ minWidth: 0 }}>
-                    <div className="fw-semibold" style={{ fontSize: 14 }}>{c.username}</div>
-                    <div className="text-muted" style={{ fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      Tap to open conversation
+                  <div className="position-relative flex-shrink-0">
+                    <img
+                      src={avatar(c.userprofile)}
+                      className="rounded-circle"
+                      alt=""
+                      style={{ width: 44, height: 44, objectFit: 'cover' }}
+                    />
+                    {c.unreadCount > 0 && (
+                      <span
+                        className="position-absolute bottom-0 end-0 bg-primary border border-dark rounded-circle"
+                        style={{ width: 12, height: 12 }}
+                      />
+                    )}
+                  </div>
+
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div className="d-flex align-items-center justify-content-between gap-1">
+                      <div 
+                        className={`text-truncate ${c.unreadCount > 0 ? 'fw-bold text-white' : 'fw-semibold text-white-50'}`} 
+                        style={{ fontSize: 14 }}
+                      >
+                        {c.username}
+                      </div>
+                      {c.lastMessageTime && (
+                        <span className="text-secondary flex-shrink-0" style={{ fontSize: 11 }}>
+                          {formatTime(c.lastMessageTime)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="d-flex align-items-center justify-content-between gap-1 mt-0.5">
+                      <div 
+                        className={`text-truncate ${c.unreadCount > 0 ? 'fw-semibold text-white' : 'text-muted'}`} 
+                        style={{ fontSize: 12, flex: 1 }}
+                      >
+                        {c.lastMessage || 'Tap to open conversation'}
+                      </div>
+
+                      {c.unreadCount > 0 && (
+                        <span
+                          className="badge bg-primary rounded-pill px-2 py-1 flex-shrink-0"
+                          style={{ fontSize: 10, fontWeight: 700, boxShadow: '0 2px 6px rgba(0,149,246,0.4)' }}
+                        >
+                          {c.unreadCount > 4 ? '4+ new messages' : `${c.unreadCount} new message${c.unreadCount > 1 ? 's' : ''}`}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </button>

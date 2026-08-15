@@ -51,24 +51,48 @@ public class MessageController {
             if (me == null) {
                 return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
             }
-            List<User> recipients = messageRepository.findRecipientsBySenderId(me.getId());
-            List<User> senders = messageRepository.findSendersByRecipientId(me.getId());
 
-            java.util.Set<User> uniquePartners = new java.util.LinkedHashSet<>();
-            if (recipients != null) {
-                uniquePartners.addAll(recipients);
-            }
-            if (senders != null) {
-                uniquePartners.addAll(senders);
+            List<Message> allMessages = messageRepository.findAllUserMessages(me.getId());
+            java.util.Map<Long, Message> latestMessageMap = new java.util.LinkedHashMap<>();
+
+            if (allMessages != null) {
+                for (Message m : allMessages) {
+                    User partner = m.getSender().getId().equals(me.getId()) ? m.getRecipient() : m.getSender();
+                    if (partner != null && !latestMessageMap.containsKey(partner.getId())) {
+                        latestMessageMap.put(partner.getId(), m);
+                    }
+                }
             }
 
-            List<SearchDTO> result = uniquePartners.stream()
-                    .map(u -> SearchDTO.builder()
-                            .id(u.getId())
-                            .username(u.getUsername())
-                            .userprofile(u.getProfilePicUrl())
-                            .build())
-                    .collect(Collectors.toList());
+            List<SearchDTO> result = new java.util.ArrayList<>();
+            for (java.util.Map.Entry<Long, Message> entry : latestMessageMap.entrySet()) {
+                Message latestMsg = entry.getValue();
+                User partner = latestMsg.getSender().getId().equals(me.getId()) ? latestMsg.getRecipient() : latestMsg.getSender();
+                if (partner == null) continue;
+
+                long unread = 0;
+                try {
+                    unread = messageRepository.countByRecipientIdAndSenderIdAndIsReadFalse(me.getId(), partner.getId());
+                } catch (Exception ignored) {
+                }
+
+                String lastMsgText = latestMsg.getContent();
+                if ((lastMsgText == null || lastMsgText.isBlank()) && latestMsg.getReel() != null) {
+                    lastMsgText = "Shared a reel";
+                } else if ((lastMsgText == null || lastMsgText.isBlank()) && latestMsg.getPost() != null) {
+                    lastMsgText = "Shared a post";
+                }
+
+                result.add(SearchDTO.builder()
+                        .id(partner.getId())
+                        .username(partner.getUsername())
+                        .userprofile(partner.getProfilePicUrl())
+                        .lastMessage(lastMsgText)
+                        .lastMessageTime(latestMsg.getCreatedAt() != null ? latestMsg.getCreatedAt().toString() : null)
+                        .unreadCount(unread)
+                        .build());
+            }
+
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
