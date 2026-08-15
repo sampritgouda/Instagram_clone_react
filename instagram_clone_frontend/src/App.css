@@ -36,6 +36,16 @@ body {
     background-color: black;
   }
 
+  /* Mobile Fix for Card Overflows (prevents bottom half from going off-screen) */
+  .card.bg-dark,
+  .card.rounded-4 {
+    max-height: 85vh !important;
+    max-height: 85dvh !important;
+    overflow-y: auto !important;
+    margin-top: auto !important;
+    margin-bottom: auto !important;
+  }
+
   .reel-actions {
     position: absolute !important;
     right: 0%;

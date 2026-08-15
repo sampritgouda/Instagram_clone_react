@@ -1,34 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaHome, FaUser, FaPaperPlane, FaPlusSquare, FaCog, FaVideo, FaHeart, FaSearch, FaBars, FaRegBookmark, FaExchangeAlt, FaSignOutAlt, FaTimes, FaDownload } from 'react-icons/fa';
 import logo from '../assets/insta-logo.jpg';
 import { useUser } from '../context/UserContext';
-import InstallAppModal from './InstallAppModal';
 
 function Sidebar({ onNotificationClick, onSearchClick }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profileImage, setIsSwitcherOpen, logout } = useUser();
+  const { profileImage, setIsSwitcherOpen, logout, openInstallModal } = useUser();
   const userId = localStorage.getItem("userId");
   
   const [more, setmore] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [showInstallModal, setShowInstallModal] = useState(false);
-
-  // Capture PWA beforeinstallprompt event globally
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
 
   const navigateprofile = () => {
     setShowMobileMenu(false);
@@ -57,7 +40,7 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
   const handleOpenInstallModal = () => {
     setmore(false);
     setShowMobileMenu(false);
-    setShowInstallModal(true);
+    openInstallModal();
   };
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
@@ -116,13 +99,6 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
       className="side-component d-md-block col-md-3 col-lg-2 bg-black p-3 border-end border-secondary w-100"
       style={{ height: window.innerWidth < 768 ? "60px" : "100vh" }}
     >
-      {/* Install App Modal */}
-      <InstallAppModal 
-        isOpen={showInstallModal}
-        onClose={() => setShowInstallModal(false)}
-        deferredPrompt={deferredPrompt}
-      />
-
       {/* Desktop: Logo */}
       <div className='d-none d-md-flex gap-2'>
         <img className='ms-3' src={logo} style={{ width: "30px", height: "30px" }} alt="logo" />

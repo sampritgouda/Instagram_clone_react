@@ -11,7 +11,6 @@ const AccountSwitcherModal = ({ isOpen, onClose }) => {
 
   const handleAddAccount = () => {
     onClose();
-    // Temporarily clear current active session so login page opens, but keep savedAccounts!
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
     localStorage.removeItem("profileImage");
@@ -20,17 +19,17 @@ const AccountSwitcherModal = ({ isOpen, onClose }) => {
 
   return (
     <div 
-      className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 10500, backdropFilter: 'blur(4px)' }}
+      className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center p-3"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.78)', zIndex: 10500, backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <div 
-        className="card bg-dark text-white border border-secondary shadow-lg rounded-4 overflow-hidden"
-        style={{ width: '90%', maxWidth: '400px' }}
+        className="card bg-dark text-white border border-secondary shadow-lg rounded-4 overflow-auto my-auto"
+        style={{ width: '100%', maxWidth: '400px', maxHeight: '85vh', background: '#141414' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="d-flex justify-content-between align-items-center px-4 py-3 border-bottom border-secondary">
+        <div className="d-flex justify-content-between align-items-center px-4 py-3 border-bottom border-secondary border-opacity-25">
           <h5 className="mb-0 fw-bold fs-6">Switch Accounts</h5>
           <button 
             className="btn btn-sm text-secondary p-0 border-0"
@@ -41,7 +40,7 @@ const AccountSwitcherModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Account List */}
-        <div className="p-3 overflow-auto" style={{ maxHeight: '300px' }}>
+        <div className="p-3 overflow-auto" style={{ maxHeight: '260px' }}>
           {savedAccounts && savedAccounts.length > 0 ? (
             savedAccounts.map((acc) => {
               const isActive = String(acc.id) === String(userId);
@@ -61,11 +60,11 @@ const AccountSwitcherModal = ({ isOpen, onClose }) => {
                       src={acc.profilePicUrl || 'https://res.cloudinary.com/dr0yboilf/image/upload/v1754637397/i721vyva5s2broewwwss.jpg'} 
                       alt={acc.username}
                       className="rounded-circle border border-secondary"
-                      style={{ width: '44px', height: '44px', objectFit: 'cover' }}
+                      style={{ width: '42px', height: '42px', objectFit: 'cover' }}
                     />
                     <div>
                       <p className="mb-0 fw-bold text-white fs-6">{acc.username || `User #${acc.id}`}</p>
-                      <small className="text-secondary">{acc.email || 'Saved Login'}</small>
+                      <small className="text-secondary" style={{ fontSize: '12px' }}>{acc.email || 'Saved Login'}</small>
                     </div>
                   </div>
 
@@ -94,7 +93,7 @@ const AccountSwitcherModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Actions Footer */}
-        <div className="p-3 border-top border-secondary d-flex flex-column gap-2 bg-black bg-opacity-50">
+        <div className="p-3 border-top border-secondary border-opacity-25 d-flex flex-column gap-2 bg-black bg-opacity-50">
           <button 
             className="btn btn-outline-light w-100 d-flex align-items-center justify-content-center gap-2 py-2 fw-semibold rounded-3"
             onClick={handleAddAccount}

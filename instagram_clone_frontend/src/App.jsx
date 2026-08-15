@@ -10,6 +10,7 @@ import { ToastProvider } from './context/ToastContext'
 import UploadBanner from './components/UploadBanner'
 import ProtectedRoute from './components/ProtectedRoute'
 import AccountSwitcherModal from './components/AccountSwitcherModal'
+import InstallAppModal from './components/InstallAppModal'
 
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './App.css'
@@ -20,7 +21,7 @@ import MessagesPage from './pages/MessagesPage'
 import NotificationsPage from './pages/NotificationsPage'
 
 const AppContent = () => {
-  const { isSwitcherOpen, setIsSwitcherOpen } = useUser();
+  const { isSwitcherOpen, setIsSwitcherOpen, isInstallModalOpen, closeInstallModal, deferredPrompt } = useUser();
 
   return (
     <>
@@ -28,6 +29,11 @@ const AppContent = () => {
       <AccountSwitcherModal 
         isOpen={isSwitcherOpen} 
         onClose={() => setIsSwitcherOpen(false)} 
+      />
+      <InstallAppModal 
+        isOpen={isInstallModalOpen}
+        onClose={closeInstallModal}
+        deferredPrompt={deferredPrompt}
       />
       <Routes>
         {/* Public Routes */}

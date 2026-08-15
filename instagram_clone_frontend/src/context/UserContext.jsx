@@ -15,6 +15,44 @@ export const UserProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
 
+  // PWA Install / Widget States
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+
+  const isStandalone = typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
+  );
+
+  // Capture PWA beforeinstallprompt event globally
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  // Auto-show download/install popup on login if NOT already running as standalone app widget
+  useEffect(() => {
+    if (token && !isStandalone && !sessionStorage.getItem('pwaPromptShown')) {
+      const timer = setTimeout(() => {
+        setIsInstallModalOpen(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [token, isStandalone]);
+
+  const openInstallModal = () => {
+    setIsInstallModalOpen(true);
+  };
+
+  const closeInstallModal = () => {
+    sessionStorage.setItem('pwaPromptShown', 'true');
+    setIsInstallModalOpen(false);
+  };
+
   useEffect(() => {
     const storedImage = localStorage.getItem("profileImage");
     if (storedImage) {
@@ -22,7 +60,6 @@ export const UserProvider = ({ children }) => {
     }
   }, []);
 
-  // Sync profileImage with localStorage
   useEffect(() => {
     if (profileImage) {
       localStorage.setItem("profileImage", profileImage);
@@ -101,6 +138,7 @@ export const UserProvider = ({ children }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
     localStorage.removeItem("profileImage");
+    sessionStorage.removeItem("pwaPromptShown");
     setToken(null);
     setUserId(null);
     setProfileImage(null);
@@ -123,6 +161,12 @@ export const UserProvider = ({ children }) => {
         logout,
         isSwitcherOpen,
         setIsSwitcherOpen,
+        deferredPrompt,
+        isInstallModalOpen,
+        setIsInstallModalOpen,
+        openInstallModal,
+        closeInstallModal,
+        isStandalone,
       }}
     >
       {children}
