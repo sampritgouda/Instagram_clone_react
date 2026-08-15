@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaHome, FaUser, FaPaperPlane, FaPlusSquare, FaCog, FaVideo, FaHeart, FaSearch, FaBars, FaRegBookmark, FaExchangeAlt, FaSignOutAlt, FaTimes } from 'react-icons/fa';
+import { FaHome, FaUser, FaPaperPlane, FaPlusSquare, FaCog, FaVideo, FaHeart, FaSearch, FaBars, FaRegBookmark, FaExchangeAlt, FaSignOutAlt, FaTimes, FaDownload } from 'react-icons/fa';
 import logo from '../assets/insta-logo.jpg';
 import { useUser } from '../context/UserContext';
+import InstallAppModal from './InstallAppModal';
 
 function Sidebar({ onNotificationClick, onSearchClick }) {
   const navigate = useNavigate();
@@ -12,6 +13,22 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
   
   const [more, setmore] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+
+  // Capture PWA beforeinstallprompt event globally
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
 
   const navigateprofile = () => {
     setShowMobileMenu(false);
@@ -35,6 +52,12 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
     setmore(false);
     setShowMobileMenu(false);
     setIsSwitcherOpen(true);
+  };
+
+  const handleOpenInstallModal = () => {
+    setmore(false);
+    setShowMobileMenu(false);
+    setShowInstallModal(true);
   };
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
@@ -93,6 +116,13 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
       className="side-component d-md-block col-md-3 col-lg-2 bg-black p-3 border-end border-secondary w-100"
       style={{ height: window.innerWidth < 768 ? "60px" : "100vh" }}
     >
+      {/* Install App Modal */}
+      <InstallAppModal 
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+        deferredPrompt={deferredPrompt}
+      />
+
       {/* Desktop: Logo */}
       <div className='d-none d-md-flex gap-2'>
         <img className='ms-3' src={logo} style={{ width: "30px", height: "30px" }} alt="logo" />
@@ -175,7 +205,7 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
             style={{ zIndex: 9998 }} 
             onClick={() => setmore(false)} 
           />
-          <div className='position-absolute bg-dark border border-secondary px-2 py-3 rounded-4 shadow-lg' style={{ width: "220px", bottom: "75px", left: "15px", zIndex: 10000 }}>
+          <div className='position-absolute bg-dark border border-secondary px-2 py-3 rounded-4 shadow-lg' style={{ width: "230px", bottom: "75px", left: "15px", zIndex: 10000 }}>
             <ul className='flex-column nav gap-1'>
               <li>
                 <Link className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3" to="/profile/edit" onClick={() => setmore(false)}>
@@ -186,6 +216,11 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
                 <Link className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3">
                   <FaRegBookmark size={18} /> Saved
                 </Link>
+              </li>
+              <li onClick={handleOpenInstallModal}>
+                <button className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3 w-100 text-start border-0 bg-transparent">
+                  <FaDownload size={18} className="text-info" /> Download App Widget
+                </button>
               </li>
               <li onClick={handleOpenSwitcher}>
                 <button className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3 w-100 text-start border-0 bg-transparent">
@@ -261,6 +296,14 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
                 style={{ fontSize: '14.5px', background: 'rgba(255,255,255,0.03)' }}
               >
                 <FaRegBookmark size={18} className="text-secondary" /> <span>Saved Posts</span>
+              </button>
+
+              <button 
+                className="btn btn-outline-light d-flex align-items-center gap-3 py-2.5 px-3 text-start rounded-3 border-secondary border-opacity-25"
+                onClick={handleOpenInstallModal}
+                style={{ fontSize: '14.5px', background: 'rgba(255,255,255,0.03)' }}
+              >
+                <FaDownload size={18} className="text-info" /> <span>Download App Widget</span>
               </button>
 
               <button 
