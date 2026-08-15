@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaHome, FaUser, FaPaperPlane, FaPlusSquare, FaCog, FaVideo, FaHeart, FaSearch, FaBars, FaRegBookmark, FaExchangeAlt, FaSignOutAlt } from 'react-icons/fa';
-import { FiHardDrive } from 'react-icons/fi';
+import { FaHome, FaUser, FaPaperPlane, FaPlusSquare, FaCog, FaVideo, FaHeart, FaSearch, FaBars, FaRegBookmark, FaExchangeAlt, FaSignOutAlt, FaTimes } from 'react-icons/fa';
 import logo from '../assets/insta-logo.jpg';
 import { useUser } from '../context/UserContext';
 
@@ -15,6 +14,8 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const navigateprofile = () => {
+    setShowMobileMenu(false);
+    setmore(false);
     navigate(`/profile/${userId}`);
   };
 
@@ -45,28 +46,28 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
       id: 'home',
       icon: <FaHome size={22} />,
       label: 'Home',
-      onClick: () => navigate('/home'),
+      onClick: () => { setShowMobileMenu(false); navigate('/home'); },
       active: isActive('/home'),
     },
     {
       id: 'search',
       icon: <FaSearch size={22} />,
       label: 'Search',
-      onClick: onSearchClick,
+      onClick: () => { setShowMobileMenu(false); onSearchClick(); },
       active: false,
     },
     {
       id: 'create',
       icon: <FaPlusSquare size={24} />,
       label: 'Create',
-      onClick: () => navigate('/create/post'),
+      onClick: () => { setShowMobileMenu(false); navigate('/create/post'); },
       active: isActive('/create'),
     },
     {
       id: 'reels',
       icon: <FaVideo size={22} />,
       label: 'Reels',
-      onClick: () => navigate('/reels'),
+      onClick: () => { setShowMobileMenu(false); navigate('/reels'); },
       active: isActive('/reels'),
     },
     {
@@ -82,7 +83,7 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
       id: 'more',
       icon: <FaBars size={22} />,
       label: 'More',
-      onClick: () => setShowMobileMenu(true),
+      onClick: () => setShowMobileMenu(!showMobileMenu),
       active: showMobileMenu,
     },
   ];
@@ -166,75 +167,124 @@ function Sidebar({ onNotificationClick, onSearchClick }) {
       </nav>
 
       {/* Desktop More Menu */}
-      {more &&
-        <div className='position-absolute bg-dark border border-secondary px-2 py-3 rounded-4 shadow-lg' style={{ width: "220px", bottom: "75px", left: "15px", zIndex: 10000 }}>
-          <ul className='flex-column nav gap-1'>
-            <li>
-              <Link className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3" to="/profile/edit" onClick={() => setmore(false)}>
-                <FaCog size={18} /> Settings
-              </Link>
-            </li>
-            <li onClick={navigatesaved}>
-              <Link className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3">
-                <FaRegBookmark size={18} /> Saved
-              </Link>
-            </li>
-            <li onClick={handleOpenSwitcher}>
-              <button className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3 w-100 text-start border-0 bg-transparent">
-                <FaExchangeAlt size={18} /> Switch accounts
-              </button>
-            </li>
-            <li onClick={handleLogout}>
-              <button className="nav-link text-danger rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3 w-100 text-start border-0 bg-transparent fw-semibold">
-                <FaSignOutAlt size={18} /> Log out
-              </button>
-            </li>
-          </ul>
-        </div>
-      }
+      {more && (
+        <>
+          {/* Click-outside backdrop for desktop */}
+          <div 
+            className="position-fixed top-0 start-0 w-100 h-100 d-none d-md-block" 
+            style={{ zIndex: 9998 }} 
+            onClick={() => setmore(false)} 
+          />
+          <div className='position-absolute bg-dark border border-secondary px-2 py-3 rounded-4 shadow-lg' style={{ width: "220px", bottom: "75px", left: "15px", zIndex: 10000 }}>
+            <ul className='flex-column nav gap-1'>
+              <li>
+                <Link className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3" to="/profile/edit" onClick={() => setmore(false)}>
+                  <FaCog size={18} /> Settings
+                </Link>
+              </li>
+              <li onClick={navigatesaved}>
+                <Link className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3">
+                  <FaRegBookmark size={18} /> Saved
+                </Link>
+              </li>
+              <li onClick={handleOpenSwitcher}>
+                <button className="nav-link text-white rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3 w-100 text-start border-0 bg-transparent">
+                  <FaExchangeAlt size={18} /> Switch accounts
+                </button>
+              </li>
+              <li onClick={handleLogout}>
+                <button className="nav-link text-danger rounded px-3 py-2 sidebar-link d-flex align-items-center gap-3 w-100 text-start border-0 bg-transparent fw-semibold">
+                  <FaSignOutAlt size={18} /> Log out
+                </button>
+              </li>
+            </ul>
+          </div>
+        </>
+      )}
 
-      {/* Mobile Drawer / Bottom Sheet for More Options */}
+      {/* ── MOBILE BOTTOM SHEET FOR 3-BAR MORE MENU ── */}
       {showMobileMenu && (
         <div 
           className="position-fixed top-0 start-0 w-100 h-100 d-md-none" 
-          style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 10500, backdropFilter: 'blur(3px)' }}
+          style={{ 
+            backgroundColor: 'rgba(0, 0, 0, 0.75)', 
+            zIndex: 20000, 
+            backdropFilter: 'blur(5px)',
+            WebkitBackdropFilter: 'blur(5px)'
+          }}
           onClick={() => setShowMobileMenu(false)}
+          onTouchEnd={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowMobileMenu(false);
+            }
+          }}
         >
           <div 
-            className="position-absolute bottom-0 start-0 w-100 bg-dark text-white rounded-top-4 p-4 border-top border-secondary shadow-lg"
+            className="position-absolute bottom-0 start-0 w-100 text-white rounded-top-4 p-4 border-top border-secondary shadow-lg"
+            style={{
+              background: '#161616',
+              borderTop: '1px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 -10px 30px rgba(0, 0, 0, 0.8)'
+            }}
             onClick={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
           >
+            {/* Grab Bar Indicator */}
             <div className="d-flex justify-content-center mb-3">
-              <div style={{ width: '40px', height: '4px', backgroundColor: '#6c757d', borderRadius: '2px' }}></div>
+              <div style={{ width: '42px', height: '4px', backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: '2px' }}></div>
             </div>
 
+            {/* Menu Header */}
+            <div className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-25">
+              <span className="fw-bold fs-6 text-white">Options</span>
+              <button 
+                className="btn btn-sm text-secondary p-0 border-0"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <FaTimes size={18} />
+              </button>
+            </div>
+
+            {/* Options List */}
             <div className="d-flex flex-column gap-2">
               <button 
-                className="btn btn-outline-light d-flex align-items-center gap-3 py-2.5 px-3 text-start rounded-3"
+                className="btn btn-outline-light d-flex align-items-center gap-3 py-2.5 px-3 text-start rounded-3 border-secondary border-opacity-25"
                 onClick={() => { setShowMobileMenu(false); navigate('/profile/edit'); }}
+                style={{ fontSize: '14.5px', background: 'rgba(255,255,255,0.03)' }}
               >
-                <FaCog size={18} /> Settings
+                <FaCog size={18} className="text-secondary" /> <span>Settings</span>
               </button>
 
               <button 
-                className="btn btn-outline-light d-flex align-items-center gap-3 py-2.5 px-3 text-start rounded-3"
+                className="btn btn-outline-light d-flex align-items-center gap-3 py-2.5 px-3 text-start rounded-3 border-secondary border-opacity-25"
                 onClick={navigatesaved}
+                style={{ fontSize: '14.5px', background: 'rgba(255,255,255,0.03)' }}
               >
-                <FaRegBookmark size={18} /> Saved Posts
+                <FaRegBookmark size={18} className="text-secondary" /> <span>Saved Posts</span>
               </button>
 
               <button 
-                className="btn btn-outline-light d-flex align-items-center gap-3 py-2.5 px-3 text-start rounded-3"
+                className="btn btn-outline-light d-flex align-items-center gap-3 py-2.5 px-3 text-start rounded-3 border-secondary border-opacity-25"
                 onClick={handleOpenSwitcher}
+                style={{ fontSize: '14.5px', background: 'rgba(255,255,255,0.03)' }}
               >
-                <FaExchangeAlt size={18} /> Switch Accounts
+                <FaExchangeAlt size={18} className="text-primary" /> <span>Switch Accounts</span>
               </button>
 
               <button 
-                className="btn btn-danger d-flex align-items-center gap-3 py-2.5 px-3 text-start rounded-3 mt-2 fw-bold"
+                className="btn btn-danger d-flex align-items-center gap-3 py-2.5 px-3 text-start rounded-3 mt-1 fw-bold"
                 onClick={handleLogout}
+                style={{ fontSize: '14.5px' }}
               >
-                <FaSignOutAlt size={18} /> Log Out
+                <FaSignOutAlt size={18} /> <span>Log Out</span>
+              </button>
+
+              <button 
+                className="btn btn-secondary w-100 py-2 mt-2 rounded-3 text-white fw-medium border-0"
+                onClick={() => setShowMobileMenu(false)}
+                style={{ background: 'rgba(255,255,255,0.1)', fontSize: '14px' }}
+              >
+                Cancel
               </button>
             </div>
           </div>
