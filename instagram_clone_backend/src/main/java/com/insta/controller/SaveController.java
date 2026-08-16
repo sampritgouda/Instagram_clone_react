@@ -31,6 +31,7 @@ public class SaveController {
 	private final UserService userService;
 	private final ReelRepository reelRepository;
 	private final PostRepository postRepository;
+	private final com.insta.service.UserInteractionService userInteractionService;
 	
 	@PostMapping()
 	public ResponseEntity<?> setReelLike(@RequestHeader("Authorization") String authHeader,@RequestBody Map<String,String> map)
@@ -48,10 +49,12 @@ public class SaveController {
 			{
 				Post post = postRepository.findById(id).orElseThrow();
 				save.setPost(post);
+				userInteractionService.logInteraction(user, post, null, com.insta.model.UserInteraction.InteractionType.SAVE, null);
 			}
 			else {
 			Reel reel = reelRepository.findById(id).orElseThrow();
 			save.setReel(reel);
+			userInteractionService.logInteraction(user, null, reel, com.insta.model.UserInteraction.InteractionType.SAVE, null);
 			}
 			save.setUser(user);
 

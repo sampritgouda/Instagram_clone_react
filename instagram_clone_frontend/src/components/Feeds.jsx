@@ -11,6 +11,7 @@ import MorePopup from './MorePopup';
 import ShareModal from './ShareModal';
 import CommentsModal from './CommentsModal';
 import { API_BASE_URL } from '../config';
+import { logInteraction } from '../utils/interactionTracker';
 
 function Feeds({ scrollcontainerref }) {
   const [feedData, setFeedData] = useState([]);
@@ -153,6 +154,7 @@ function Feeds({ scrollcontainerref }) {
   useEffect(() => {
     if (feedData.length > 0 && seenPosts.size === 0) {
       setSeenPosts(new Set([feedData[0].id]));
+      logInteraction({ postId: feedData[0].id, type: 'VIEW' });
     }
   }, [feedData]);
 

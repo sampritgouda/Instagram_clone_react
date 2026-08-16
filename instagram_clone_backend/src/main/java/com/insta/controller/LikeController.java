@@ -37,6 +37,7 @@ public class LikeController {
 	private final ReelRepository reelRepository;
 	private final PostRepository postRepository;
 	private final NotificationService notificationService;
+	private final com.insta.service.UserInteractionService userInteractionService;
 
 	@PostMapping()
 	public ResponseEntity<?> setReelLike(@RequestHeader("Authorization") String authHeader,@RequestBody Map<String,String> map)
@@ -67,6 +68,7 @@ public class LikeController {
 				like.setPost(post);
 				like.setUser(user);
 				notificationService.createNotification(post.getUser(), user, com.insta.model.Notification.NotificationType.LIKE, post, null, null);
+				userInteractionService.logInteraction(user, post, null, com.insta.model.UserInteraction.InteractionType.LIKE, null);
 			}
 			else
 			{
@@ -75,6 +77,7 @@ public class LikeController {
 			like.setReel(reel);
 			like.setUser(user);
 			notificationService.createNotification(reel.getUser(), user, com.insta.model.Notification.NotificationType.LIKE, null, reel, null);
+			userInteractionService.logInteraction(user, null, reel, com.insta.model.UserInteraction.InteractionType.LIKE, null);
 			}
 			likeRepository.save(like);
 			return ResponseEntity.ok("success");

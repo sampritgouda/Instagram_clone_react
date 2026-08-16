@@ -30,11 +30,12 @@ public class ReelsService {
 	private final ReelRepository reelRepository;
 	private final FollowRequestRepository followRequestRepository;
 	private final FollowerRepository followerRepository;
+	private final RecommendationService recommendationService;
 
 	public List<Reel> getAllReels(int page, int limit, User user) {
 	    Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-	    return reelRepository.findAll(pageable).stream()
+	    List<Reel> candidateReels = reelRepository.findAll(pageable).stream()
 	        .filter(reel -> {
 	            // if account is private and not followed -> exclude
 	            if (reel.getUser().getIsPrivate()) {
@@ -64,6 +65,9 @@ public class ReelsService {
 	            reel.setSaveCount(reel.getSaves().size());
 	        })
 	        .collect(Collectors.toList());
+
+	    // Apply intelligent recommendation ranking based on watch time & interaction history
+	    return recommendationService.rankReelsForUser(user, candidateReels);
 	}
 
 	

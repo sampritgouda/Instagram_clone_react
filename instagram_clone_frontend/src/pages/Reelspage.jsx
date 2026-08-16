@@ -25,6 +25,8 @@ import MorePopup from '../components/MorePopup';
 import ShareModal from '../components/ShareModal';
 import CommentsModal from '../components/CommentsModal';
 import { API_BASE_URL } from '../config';
+import { logInteraction } from '../utils/interactionTracker';
+
 function ReelsPage() {
   const navigate = useNavigate()
 
@@ -216,16 +218,30 @@ function ReelsPage() {
 
 
 
-  // Autoplay when visible
+  // Autoplay when visible & log watch time / skip interactions
+  const reelWatchStarts = useRef({});
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
         entries.forEach(entry => {
           const video = entry.target;
+          const reelId = video.dataset.reelId;
           if (entry.isIntersecting) {
             video.play().catch(() => { });
+            if (reelId) {
+              reelWatchStarts.current[reelId] = Date.now();
+            }
           } else {
             video.pause();
+            if (reelId && reelWatchStarts.current[reelId]) {
+              const durationSec = (Date.now() - reelWatchStarts.current[reelId]) / 1000;
+              delete reelWatchStarts.current[reelId];
+              if (durationSec > 0.5) {
+                const type = durationSec < 2.0 ? 'SKIP' : 'VIEW';
+                logInteraction({ reelId: Number(reelId), type, watchTime: durationSec.toFixed(1) });
+              }
+            }
           }
         });
       },
@@ -289,6 +305,7 @@ function ReelsPage() {
               <div className='p-3' style={{ width: "100%", height: "100%" }}>
                 <video
                   ref={el => (videoRefs.current[reel.id] = el)}
+                  data-reel-id={reel.id}
                   className="w-100"
                   style={{ borderRadius: '10px' }}
                   src={reel.videoUrl}

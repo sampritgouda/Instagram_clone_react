@@ -36,12 +36,13 @@ public class PostService {
    private final  UserService userService;
    private final FollowerRepository followerRepository;
    private final FollowRequestRepository followRequestRepository;
+   private final RecommendationService recommendationService;
    
    public List<Post> getAllPosts(int page, int limit, String mood, String authHeader) {
 	    User user = userService.getUserByToken(authHeader);
 	    Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-	    return postRepository.findAll(pageable).stream()
+	    List<Post> candidatePosts = postRepository.findAll(pageable).stream()
 	        .filter(post -> {
 	            // Mood filtering
 	            if (mood != null && !mood.trim().isEmpty() && !mood.equalsIgnoreCase("All")) {
@@ -79,6 +80,9 @@ public class PostService {
 	            post.setLikeCount(post.getLikes().size());
 	        })
 	        .collect(Collectors.toList());
+
+	    // Apply intelligent recommendation ranking based on user interactions
+	    return recommendationService.rankPostsForUser(user, candidatePosts);
 	}
 
    
