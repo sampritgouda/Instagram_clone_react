@@ -2,33 +2,37 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SideComponent from '../components/SideComponent';
 import { API_BASE_URL } from '../config';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaBell } from 'react-icons/fa';
+import { useWebSocket } from '../context/WebSocketContext';
+import PostPopup from '../components/PostPopup';
 
 const MessagesPage = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
+  const { websocketService, isOnline, isTyping, notificationPermissionGranted, promptNotificationPermission } = useWebSocket();
 
   // ── state ──────────────────────────────────────────────────────────────
   const [conversations, setConversations] = useState([]);
-  const [activeChat, setActiveChat]       = useState(null);  // SearchDTO {id, username, userprofile}
-  const [messages, setMessages]           = useState([]);
-  const [input, setInput]                 = useState('');
-  const [searchQuery, setSearchQuery]     = useState('');
+  const [activeChat, setActiveChat] = useState(null);  // SearchDTO {id, username, userprofile}
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [sending, setSending]             = useState(false);
+  const [sending, setSending] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingMessageText, setEditingMessageText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeMenuMessageId, setActiveMenuMessageId] = useState(null);
-  const [playingReel, setPlayingReel] = useState(null);
-  const [playingPost, setPlayingPost] = useState(null);
+  const [selectedPopupFeed, setSelectedPopupFeed] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
 
-  const bottomRef      = useRef(null);
-  const pollTimerRef   = useRef(null);
-  const activeChatRef  = useRef(activeChat);
+  const bottomRef = useRef(null);
+  const typingTimerRef = useRef(null);
+  const activeChatRef = useRef(activeChat);
 
-  // keep ref in sync (needed inside polling closure)
+  const myId = Number(localStorage.getItem('userId'));
+
+  // keep ref in sync
   useEffect(() => { activeChatRef.current = activeChat; }, [activeChat]);
 
   // ── auth guard ─────────────────────────────────────────────────────────
@@ -43,44 +47,67 @@ const MessagesPage = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setConversations(await res.json());
-    } catch (_) {}
+    } catch (_) { }
   }, [token]);
 
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
 
-  // ── fetch chat history (used both initially and by polling) ────────────
+  // ── fetch chat history ─────────────────────────────────────────────────
   const fetchHistory = useCallback(async (partnerId) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/messages/history/${partnerId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setMessages(await res.json());
-    } catch (_) {}
+    } catch (_) { }
   }, [token]);
 
-  // ── polling: every 3 seconds while a chat is open ─────────────────────
-  const startPolling = useCallback((partnerId) => {
-    clearTimeout(pollTimerRef.current);
-    const tick = () => {
-      if (!activeChatRef.current || activeChatRef.current.id !== partnerId) return;
-      fetchHistory(partnerId).then(() => {
-        pollTimerRef.current = setTimeout(tick, 3000);
-      });
-    };
-    pollTimerRef.current = setTimeout(tick, 3000);
-  }, [fetchHistory]);
+  // ── Real-time WebSocket Listeners ─────────────────────────────────────
+  useEffect(() => {
+    // Listen for incoming messages via WebSockets
+    const unsubMsg = websocketService.on('message', (incomingMsg) => {
+      if (!incomingMsg) return;
+      const activePartner = activeChatRef.current;
 
-  useEffect(() => () => clearTimeout(pollTimerRef.current), []);
+      // If message belongs to active chat, append it
+      if (activePartner && (incomingMsg.senderId === activePartner.id || incomingMsg.senderId === myId)) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === incomingMsg.id)) return prev;
+          return [...prev, incomingMsg];
+        });
+        // Mark incoming message as seen immediately if active
+        if (incomingMsg.senderId === activePartner.id) {
+          websocketService.sendMarkSeen(activePartner.id);
+        }
+      }
+      // Refresh sidebar conversation previews
+      fetchConversations();
+    });
+
+    // Listen for seen receipts
+    const unsubSeen = websocketService.on('seen', (event) => {
+      if (!event) return;
+      const activePartner = activeChatRef.current;
+      if (activePartner && (event.readerId === activePartner.id || event.senderId === activePartner.id)) {
+        setMessages(prev => prev.map(m => m.senderId === myId ? { ...m, isRead: true } : m));
+      }
+    });
+
+    return () => {
+      unsubMsg();
+      unsubSeen();
+    };
+  }, [fetchConversations, myId, websocketService]);
 
   // ── open a conversation ────────────────────────────────────────────────
   const openChat = (partner) => {
-    clearTimeout(pollTimerRef.current);
     setActiveChat(partner);
     setMessages([]);
     setInput('');
     fetchHistory(partner.id).then(() => {
-      startPolling(partner.id);
       fetchConversations();
+      // Dispatch real-time markSeen event
+      websocketService.sendMarkSeen(partner.id);
     });
     // Reset unread count locally when opening chat
     setConversations(prev =>
@@ -93,6 +120,20 @@ const MessagesPage = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // ── handle typing status event dispatching ──────────────────────────────
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    if (!activeChat) return;
+
+    // Send typing status via WebSocket
+    websocketService.sendTyping(activeChat.id, true);
+
+    clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      websocketService.sendTyping(activeChat.id, false);
+    }, 1500);
+  };
+
   // ── live user search ───────────────────────────────────────────────────
   useEffect(() => {
     if (!searchQuery.trim()) { setSearchResults([]); return; }
@@ -102,7 +143,7 @@ const MessagesPage = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) setSearchResults(await res.json());
-      } catch (_) {}
+      } catch (_) { }
     }, 300);
     return () => clearTimeout(tid);
   }, [searchQuery, token]);
@@ -112,20 +153,33 @@ const MessagesPage = () => {
     e.preventDefault();
     if (!input.trim() || !activeChat || sending) return;
     setSending(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/messages/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ recipientId: activeChat.id, content: input.trim(), repliedToMessageId: replyingTo ? replyingTo.id : null }),
-      });
-      if (res.ok) {
-        const sent = await res.json();
-        setMessages(prev => [...prev, sent]);
-        setInput('');
-        setReplyingTo(null);
-        fetchConversations();
-      }
-    } catch (_) {}
+
+    const messageContent = input.trim();
+    const replyId = replyingTo ? replyingTo.id : null;
+
+    // Clear input & typing status immediately for snappy UI
+    setInput('');
+    setReplyingTo(null);
+    websocketService.sendTyping(activeChat.id, false);
+
+    // Try sending via WebSocket first for instant delivery
+    const sentViaWs = websocketService.sendMessage(activeChat.id, messageContent, null, null, replyId);
+
+    if (!sentViaWs) {
+      // Fallback to REST endpoint if WebSocket is not open
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/messages/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ recipientId: activeChat.id, content: messageContent, repliedToMessageId: replyId }),
+        });
+        if (res.ok) {
+          const sent = await res.json();
+          setMessages(prev => [...prev, sent]);
+          fetchConversations();
+        }
+      } catch (_) { }
+    }
     setSending(false);
   };
 
@@ -141,7 +195,7 @@ const MessagesPage = () => {
       } else {
         alert("Failed to delete message");
       }
-    } catch (_) {}
+    } catch (_) { }
   };
 
   const handleSaveEditMessage = async (messageId) => {
@@ -160,12 +214,54 @@ const MessagesPage = () => {
       } else {
         alert("Failed to edit message");
       }
-    } catch (_) {}
+    } catch (_) { }
   };
 
-  const myId = Number(localStorage.getItem('userId'));
-
   // ── helpers ────────────────────────────────────────────────────────────
+  const handleOpenReelPopup = (reel) => {
+    if (!reel) return;
+    const feed = {
+      id: reel.id,
+      type: 'reel',
+      mediaUrl: reel.videoUrl || reel.url || reel.mediaUrl,
+      mediaType: 'video',
+      caption: reel.caption || '',
+      likeCount: reel.likeCount || 0,
+      liked: reel.liked || false,
+      saved: reel.saved || false,
+      user: {
+        id: reel.userId || (reel.user && reel.user.id) || 0,
+        username: reel.username || (reel.user && reel.user.username) || 'user',
+        profilePicUrl: reel.profilePicUrl || (reel.user && reel.user.profilePicUrl) || 'https://ui-avatars.com/api/?background=333&color=fff&name=U',
+        fullName: (reel.user && reel.user.fullName) || ''
+      }
+    };
+    setSelectedPopupFeed(feed);
+  };
+
+  const handleOpenPostPopup = (post) => {
+    if (!post) return;
+    const url = post.imageUrl || post.url || post.mediaUrl;
+    const isVideo = post.mediaType === 'video' || (url && (url.includes('/video/upload/') || url.endsWith('.mp4')));
+    const feed = {
+      id: post.id,
+      type: 'post',
+      mediaUrl: url,
+      mediaType: isVideo ? 'video' : 'image',
+      caption: post.caption || '',
+      likeCount: post.likeCount || 0,
+      liked: post.liked || false,
+      saved: post.saved || false,
+      user: {
+        id: post.userId || (post.user && post.user.id) || 0,
+        username: post.username || (post.user && post.user.username) || 'user',
+        profilePicUrl: post.profilePicUrl || (post.user && post.user.profilePicUrl) || 'https://ui-avatars.com/api/?background=333&color=fff&name=U',
+        fullName: (post.user && post.user.fullName) || ''
+      }
+    };
+    setSelectedPopupFeed(feed);
+  };
+
   const avatar = (url) =>
     url ? url : 'https://ui-avatars.com/api/?background=333&color=fff&name=U';
 
@@ -202,15 +298,27 @@ const MessagesPage = () => {
               </h5>
               <small className="text-muted">Direct messages</small>
             </div>
-            {/* Close Button */}
-            <button 
-              className="btn btn-link text-white-50 p-1.5 d-flex align-items-center justify-content-center border-0 outline-none text-decoration-none"
-              onClick={() => navigate('/home')}
-              style={{ borderRadius: '50%', background: 'rgba(255,255,255,0.06)', width: '32px', height: '32px' }}
-              title="Close Messages"
-            >
-              <FaTimes size={14} className="text-white" />
-            </button>
+            <div className="d-flex align-items-center gap-2">
+              {!notificationPermissionGranted && (
+                <button
+                  className="btn btn-sm btn-outline-light border-0 p-1 d-flex align-items-center justify-content-center"
+                  onClick={promptNotificationPermission}
+                  style={{ borderRadius: '50%', background: 'rgba(255,255,255,0.06)', width: '32px', height: '32px' }}
+                  title="Enable Push Notifications"
+                >
+                  <FaBell size={14} className="text-warning" />
+                </button>
+              )}
+              {/* Close Button */}
+              <button
+                className="btn btn-link text-white-50 p-1.5 d-flex align-items-center justify-content-center border-0 outline-none text-decoration-none"
+                onClick={() => navigate('/home')}
+                style={{ borderRadius: '50%', background: 'rgba(255,255,255,0.06)', width: '32px', height: '32px' }}
+                title="Close Messages"
+              >
+                <FaTimes size={14} className="text-white" />
+              </button>
+            </div>
           </div>
 
           {/* Search new user */}
@@ -218,7 +326,7 @@ const MessagesPage = () => {
             <div className="input-group">
               <span className="input-group-text bg-transparent border-secondary text-secondary">
                 <svg width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
                 </svg>
               </span>
               <input
@@ -253,12 +361,20 @@ const MessagesPage = () => {
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <img
-                      src={avatar(u.userprofile)}
-                      className="rounded-circle"
-                      alt=""
-                      style={{ width: 36, height: 36, objectFit: 'cover' }}
-                    />
+                    <div className="position-relative">
+                      <img
+                        src={avatar(u.userprofile)}
+                        className="rounded-circle"
+                        alt=""
+                        style={{ width: 36, height: 36, objectFit: 'cover' }}
+                      />
+                      {isOnline(u.id) && (
+                        <span
+                          className="position-absolute bottom-0 end-0 bg-success border border-dark rounded-circle"
+                          style={{ width: 10, height: 10 }}
+                        />
+                      )}
+                    </div>
                     <span style={{ fontSize: 14, fontWeight: 500 }}>{u.username}</span>
                   </button>
                 ))}
@@ -296,7 +412,14 @@ const MessagesPage = () => {
                       alt=""
                       style={{ width: 44, height: 44, objectFit: 'cover' }}
                     />
-                    {c.unreadCount > 0 && (
+                    {isOnline(c.id) && (
+                      <span
+                        className="position-absolute bottom-0 end-0 bg-success border border-dark rounded-circle"
+                        style={{ width: 12, height: 12, boxShadow: '0 0 6px rgba(40,167,69,0.8)' }}
+                        title="Online"
+                      />
+                    )}
+                    {c.unreadCount > 0 && !isOnline(c.id) && (
                       <span
                         className="position-absolute bottom-0 end-0 bg-primary border border-dark rounded-circle"
                         style={{ width: 12, height: 12 }}
@@ -306,8 +429,8 @@ const MessagesPage = () => {
 
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div className="d-flex align-items-center justify-content-between gap-1">
-                      <div 
-                        className={`text-truncate ${c.unreadCount > 0 ? 'fw-bold text-white' : 'fw-semibold text-white-50'}`} 
+                      <div
+                        className={`text-truncate ${c.unreadCount > 0 ? 'fw-bold text-white' : 'fw-semibold text-white-50'}`}
                         style={{ fontSize: 14 }}
                       >
                         {c.username}
@@ -320,11 +443,11 @@ const MessagesPage = () => {
                     </div>
 
                     <div className="d-flex align-items-center justify-content-between gap-1 mt-0.5">
-                      <div 
-                        className={`text-truncate ${c.unreadCount > 0 ? 'fw-semibold text-white' : 'text-muted'}`} 
+                      <div
+                        className={`text-truncate ${isTyping(c.id) ? 'text-success fw-bold' : c.unreadCount > 0 ? 'fw-semibold text-white' : 'text-muted'}`}
                         style={{ fontSize: 12, flex: 1 }}
                       >
-                        {c.lastMessage || 'Tap to open conversation'}
+                        {isTyping(c.id) ? 'typing...' : (c.lastMessage || 'Tap to open conversation')}
                       </div>
 
                       {c.unreadCount > 0 && (
@@ -356,25 +479,44 @@ const MessagesPage = () => {
                 {/* back button on mobile */}
                 <button
                   className="btn btn-sm d-md-none text-white border-0 p-0 me-1"
-                  onClick={() => { clearTimeout(pollTimerRef.current); setActiveChat(null); }}
+                  onClick={() => { setActiveChat(null); }}
                 >
                   ←
                 </button>
-                <img
-                  src={avatar(activeChat.userprofile)}
-                  className="rounded-circle"
-                  alt=""
-                  style={{ width: 42, height: 42, objectFit: 'cover', cursor: 'pointer' }}
-                  onClick={(e) => { e.stopPropagation(); navigate(`/profile/${activeChat.id}`); }}
-                />
+                <div className="position-relative">
+                  <img
+                    src={avatar(activeChat.userprofile)}
+                    className="rounded-circle"
+                    alt=""
+                    style={{ width: 42, height: 42, objectFit: 'cover', cursor: 'pointer' }}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/profile/${activeChat.id}`); }}
+                  />
+                  {isOnline(activeChat.id) && (
+                    <span
+                      className="position-absolute bottom-0 end-0 bg-success border border-dark rounded-circle"
+                      style={{ width: 12, height: 12, boxShadow: '0 0 6px rgba(40,167,69,0.8)' }}
+                    />
+                  )}
+                </div>
                 <div onClick={(e) => { e.stopPropagation(); navigate(`/profile/${activeChat.id}`); }} style={{ cursor: 'pointer' }}>
                   <div className="fw-bold text-white" style={{ fontSize: 15 }}>{activeChat.username}</div>
-                  <div className="text-muted" style={{ fontSize: 12 }}>Active now</div>
+                  <div style={{ fontSize: 12 }}>
+                    {isTyping(activeChat.id) ? (
+                      <span className="text-success fw-bold d-flex align-items-center gap-1">
+                        <span className="spinner-grow spinner-grow-sm" style={{ width: '8px', height: '8px' }} />
+                        typing...
+                      </span>
+                    ) : isOnline(activeChat.id) ? (
+                      <span className="text-success fw-semibold">● Active now</span>
+                    ) : (
+                      <span className="text-muted">Offline</span>
+                    )}
+                  </div>
                 </div>
               </div>
-              
+
               {/* Close Button */}
-              <button 
+              <button
                 className="btn btn-link text-white-50 p-1.5 d-flex align-items-center justify-content-center border-0 outline-none text-decoration-none"
                 onClick={() => navigate('/home')}
                 style={{ borderRadius: '50%', background: 'rgba(255,255,255,0.06)', width: '32px', height: '32px' }}
@@ -407,44 +549,44 @@ const MessagesPage = () => {
                         <div className="position-relative message-actions animate__animated animate__fadeIn" style={{ opacity: 0, transition: 'opacity 0.2s' }}>
                           {editingMessageId !== m.id && (
                             <>
-                              <button 
-                                type="button" 
-                                className="btn btn-link text-white p-0 text-decoration-none border-0 px-1" 
+                              <button
+                                type="button"
+                                className="btn btn-link text-white p-0 text-decoration-none border-0 px-1"
                                 onClick={() => setActiveMenuMessageId(activeMenuMessageId === m.id ? null : m.id)}
                                 style={{ fontSize: '18px', lineHeight: '1' }}
                               >
                                 ⋮
                               </button>
                               {activeMenuMessageId === m.id && (
-                                <div 
-                                  className="position-absolute bg-dark border border-secondary rounded p-1 shadow-lg" 
-                                  style={{ 
-                                    right: isMe ? "10px" : "auto", 
-                                    left: isMe ? "auto" : "10px", 
-                                    bottom: "20px", 
-                                    zIndex: 10, 
-                                    minWidth: "75px" 
+                                <div
+                                  className="position-absolute bg-dark border border-secondary rounded p-1 shadow-lg"
+                                  style={{
+                                    right: isMe ? "10px" : "auto",
+                                    left: isMe ? "auto" : "10px",
+                                    bottom: "20px",
+                                    zIndex: 10,
+                                    minWidth: "75px"
                                   }}
                                 >
-                                  <button 
-                                    type="button" 
-                                    className="btn btn-sm btn-link text-warning d-block w-100 text-start text-decoration-none py-1 px-2" 
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-link text-warning d-block w-100 text-start text-decoration-none py-1 px-2"
                                     onClick={() => { setReplyingTo(m); setActiveMenuMessageId(null); }}
                                     style={{ fontSize: '12px' }}
                                   >
                                     Reply
                                   </button>
-                                  <button 
-                                    type="button" 
-                                    className="btn btn-sm btn-link text-info d-block w-100 text-start text-decoration-none py-1 px-2" 
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-link text-info d-block w-100 text-start text-decoration-none py-1 px-2"
                                     onClick={() => { setEditingMessageId(m.id); setEditingMessageText(m.content); setActiveMenuMessageId(null); }}
                                     style={{ fontSize: '12px' }}
                                   >
                                     Edit
                                   </button>
-                                  <button 
-                                    type="button" 
-                                    className="btn btn-sm btn-link text-danger d-block w-100 text-start text-decoration-none py-1 px-2" 
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-link text-danger d-block w-100 text-start text-decoration-none py-1 px-2"
                                     onClick={() => { handleDeleteMessage(m.id); setActiveMenuMessageId(null); }}
                                     style={{ fontSize: '12px' }}
                                   >
@@ -484,14 +626,14 @@ const MessagesPage = () => {
                         {m.reel ? (
                           <div
                             style={{ cursor: 'pointer', borderRadius: '12px', overflow: 'hidden', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.15)', maxWidth: '240px', margin: '4px 0' }}
-                            onClick={() => setPlayingReel(m.reel)}
+                            onClick={() => handleOpenReelPopup(m.reel)}
                           >
                             <div style={{ position: 'relative', width: '100%', paddingTop: '133.33%' }}>
                               <video
                                 src={m.reel.videoUrl}
                                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                                 muted loop playsInline
-                                onMouseEnter={(e) => e.target.play().catch(() => {})}
+                                onMouseEnter={(e) => e.target.play().catch(() => { })}
                                 onMouseLeave={(e) => e.target.pause()}
                               />
                               <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', padding: '8px 10px', fontSize: '11px', color: 'rgba(255,255,255,0.9)', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden', fontWeight: '500' }}>
@@ -505,7 +647,7 @@ const MessagesPage = () => {
                         ) : m.post ? (
                           <div
                             style={{ cursor: 'pointer', borderRadius: '12px', overflow: 'hidden', background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.12)', maxWidth: '180px', margin: '4px 0' }}
-                            onClick={() => setPlayingPost(m.post)}
+                            onClick={() => handleOpenPostPopup(m.post)}
                           >
                             <div style={{ position: 'relative', width: '100%', paddingTop: '66.66%', overflow: 'hidden' }}>
                               {m.post.mediaType === 'video' ? (
@@ -545,9 +687,16 @@ const MessagesPage = () => {
                             <div>{m.content}</div>
                           )
                         )}
-                        <div style={{ fontSize: 10, opacity: 0.65, marginTop: 4, textAlign: isMe ? 'right' : 'left' }}>
-                          {formatTime(m.createdAt)}
-                          <button type="button" className="btn btn-link btn-sm text-secondary ms-2 p-0" onClick={() => setReplyingTo(m)} style={{ fontSize: '11px' }}>↩ reply</button>
+                        <div style={{ fontSize: 10, opacity: 0.8, marginTop: 4, textAlign: isMe ? 'right' : 'left', display: 'flex', alignItems: 'center', justifyContent: isMe ? 'flex-end' : 'flex-start', gap: 4 }}>
+                          <span>{formatTime(m.createdAt)}</span>
+                          {isMe && (
+                            m.isRead ? (
+                              <span className="text-info font-monospace" style={{ fontSize: 11, fontWeight: 700 }} title="Seen">✓✓ Seen</span>
+                            ) : (
+                              <span className="text-white-50" style={{ fontSize: 10 }}>✓ Sent</span>
+                            )
+                          )}
+                          <button type="button" className="btn btn-link btn-sm text-secondary ms-1 p-0 text-decoration-none" onClick={() => setReplyingTo(m)} style={{ fontSize: '11px' }}>↩ reply</button>
                         </div>
                       </div>
                     </div>
@@ -566,7 +715,8 @@ const MessagesPage = () => {
                 borderTop: '1px solid rgba(255,255,255,0.08)',
                 backdropFilter: 'blur(10px)',
                 flexShrink: 0,
-                position: 'relative'
+                position: 'relative',
+                flexWrap: 'wrap',
               }}
             >
               {replyingTo && (
@@ -585,10 +735,10 @@ const MessagesPage = () => {
                 <div className="position-absolute bg-dark border border-secondary rounded p-2 shadow-lg" style={{ bottom: "70px", left: "20px", zIndex: 1000, maxWidth: "220px" }}>
                   <div className="d-flex flex-wrap gap-1">
                     {["😀", "😂", "😍", "👍", "🔥", "❤️", "👏", "🎉", "😢", "😮", "🙌", "✨", "🌟", "😎", "🤔", "💯"].map(emoji => (
-                      <button 
-                        type="button" 
-                        key={emoji} 
-                        className="btn btn-sm btn-outline-light p-1 border-0" 
+                      <button
+                        type="button"
+                        key={emoji}
+                        className="btn btn-sm btn-outline-light p-1 border-0"
                         onClick={() => { setInput(prev => prev + emoji); setShowEmojiPicker(false); }}
                         style={{ fontSize: "16px" }}
                       >
@@ -598,58 +748,59 @@ const MessagesPage = () => {
                   </div>
                 </div>
               )}
-
-              <button 
-                type="button" 
-                className="btn btn-outline-light p-2 rounded-circle border-0 d-flex align-items-center justify-content-center" 
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)} 
-                title="Add Emoji"
-              >
-                😊
-              </button>
-              <input
-                type="text"
-                className="form-control border-0 text-white"
-                placeholder="Message…"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                style={{
-                  background: 'rgba(255,255,255,0.08)',
-                  borderRadius: 24,
-                  padding: '10px 18px',
-                  fontSize: 14,
-                  outline: 'none',
-                  boxShadow: 'none',
-                }}
-              />
-              <button
-                type="submit"
-                disabled={!input.trim() || sending}
-                style={{
-                  background: 'linear-gradient(135deg, #e05d5d, #c0392b)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: 44,
-                  height: 44,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  cursor: input.trim() && !sending ? 'pointer' : 'not-allowed',
-                  opacity: input.trim() && !sending ? 1 : 0.45,
-                  transition: 'opacity 0.2s, transform 0.15s',
-                  transform: input.trim() && !sending ? 'scale(1)' : 'scale(0.95)',
-                  boxShadow: '0 4px 15px rgba(224,93,93,0.4)',
-                }}
-              >
-                {sending ? (
-                  <span className="spinner-border spinner-border-sm text-white" role="status" />
-                ) : (
-                  <svg width="18" height="18" fill="white" viewBox="0 0 16 16">
-                    <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11zM6.636 10.07l2.761 4.338L14.13 2.576zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493z"/>
-                  </svg>
-                )}
-              </button>
+              <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }} className='gap-3'>
+                <button
+                  type="button"
+                  className="btn btn-outline-light p-2 rounded-circle border-0 d-flex align-items-center justify-content-center"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  title="Add Emoji"
+                >
+                  😊
+                </button>
+                <input
+                  type="text"
+                  className="form-control border-0 text-white"
+                  placeholder="Message…"
+                  value={input}
+                  onChange={handleInputChange}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    borderRadius: 24,
+                    padding: '10px 18px',
+                    fontSize: 14,
+                    outline: 'none',
+                    boxShadow: 'none',
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || sending}
+                  style={{
+                    background: 'linear-gradient(135deg, #e05d5d, #c0392b)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: 44,
+                    height: 44,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    cursor: input.trim() && !sending ? 'pointer' : 'not-allowed',
+                    opacity: input.trim() && !sending ? 1 : 0.45,
+                    transition: 'opacity 0.2s, transform 0.15s',
+                    transform: input.trim() && !sending ? 'scale(1)' : 'scale(0.95)',
+                    boxShadow: '0 4px 15px rgba(224,93,93,0.4)',
+                  }}
+                >
+                  {sending ? (
+                    <span className="spinner-border spinner-border-sm text-white" role="status" />
+                  ) : (
+                    <svg width="18" height="18" fill="white" viewBox="0 0 16 16">
+                      <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11zM6.636 10.07l2.761 4.338L14.13 2.576zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </form>
           </div>
         ) : (
@@ -659,7 +810,7 @@ const MessagesPage = () => {
             style={{ color: 'rgba(255,255,255,0.2)' }}
           >
             <svg width="80" height="80" fill="currentColor" viewBox="0 0 16 16" style={{ opacity: 0.3 }}>
-              <path d="M2 2a2 2 0 0 0-2 2v8.01A2 2 0 0 0 2 14h5.5a.5.5 0 0 0 0-1H2a1 1 0 0 1-.966-.741L5.53 9.441C5.786 9.181 5.957 9 6.5 9h3c.543 0 .714.181.97.441l4.496 3.818A1 1 0 0 1 14 14h-1.5a.5.5 0 0 0 0 1H14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm12 1a1 1 0 0 1 1 1v8a1 1 0 0 1-.032.01L11.315 8.4C12.505 7.655 13 6.95 13 6c0-1.105-.895-2-2-2H5c-1.105 0-2 .895-2 2 0 .95.495 1.655 1.685 2.4L1.032 12.01A1 1 0 0 1 1 12V4a1 1 0 0 1 1-1h12z"/>
+              <path d="M2 2a2 2 0 0 0-2 2v8.01A2 2 0 0 0 2 14h5.5a.5.5 0 0 0 0-1H2a1 1 0 0 1-.966-.741L5.53 9.441C5.786 9.181 5.957 9 6.5 9h3c.543 0 .714.181.97.441l4.496 3.818A1 1 0 0 1 14 14h-1.5a.5.5 0 0 0 0 1H14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm12 1a1 1 0 0 1 1 1v8a1 1 0 0 1-.032.01L11.315 8.4C12.505 7.655 13 6.95 13 6c0-1.105-.895-2-2-2H5c-1.105 0-2 .895-2 2 0 .95.495 1.655 1.685 2.4L1.032 12.01A1 1 0 0 1 1 12V4a1 1 0 0 1 1-1h12z" />
             </svg>
             <p className="mt-3 mb-1 fw-semibold" style={{ fontSize: 18, color: 'rgba(255,255,255,0.5)' }}>Your Messages</p>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)' }}>Search for a friend to start chatting</p>
@@ -667,163 +818,12 @@ const MessagesPage = () => {
         )}
       </div>
 
-      {/* ── Immersive Reel Player Modal ── */}
-      {playingReel && (
-        <div 
-          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-          style={{ 
-            backgroundColor: 'rgba(0, 0, 0, 0.92)', 
-            backdropFilter: 'blur(15px)',
-            zIndex: 100000 
-          }}
-          onClick={() => setPlayingReel(null)}
-        >
-          {/* Close button */}
-          <button 
-            type="button"
-            className="btn btn-link text-white position-absolute" 
-            style={{ top: '20px', right: '20px', fontSize: '30px', zIndex: 100001, textDecoration: 'none', border: 'none', outline: 'none' }}
-            onClick={() => setPlayingReel(null)}
-          >
-            ✕
-          </button>
-
-          {/* Reel Container */}
-          <div 
-            className="d-flex flex-column align-items-center justify-content-center position-relative"
-            style={{ 
-              width: '100%', 
-              maxWidth: '380px', 
-              height: '80vh',
-              animation: 'scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <video 
-              src={playingReel.videoUrl} 
-              style={{ 
-                width: '100%', 
-                height: '100%', 
-                objectFit: 'cover', 
-                borderRadius: '16px',
-                boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
-              }}
-              autoPlay 
-              controls 
-              loop
-              playsInline
-            />
-
-            {/* Overlay User Info */}
-            <div 
-              style={{ 
-                position: 'absolute', 
-                bottom: '0', 
-                left: '0', 
-                right: '0',
-                background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 70%, transparent 100%)',
-                padding: '24px 20px 20px 20px',
-                borderRadius: '0 0 16px 16px',
-                pointerEvents: 'none'
-              }}
-            >
-              <div className="d-flex align-items-center gap-2 mb-2">
-                <img 
-                  src={playingReel.profilePicUrl || 'https://ui-avatars.com/api/?background=333&color=fff&name=' + (playingReel.username || 'U')} 
-                  className="rounded-circle"
-                  style={{ width: '32px', height: '32px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.2)' }}
-                  alt=""
-                />
-                <span className="fw-bold text-white" style={{ fontSize: '14px', textShadow: '1px 1px 2px rgba(0,0,0,0.6)' }}>
-                  @{playingReel.username || 'instagram_user'}
-                </span>
-              </div>
-              <p className="text-white-50 m-0 text-truncate" style={{ fontSize: '13px', textShadow: '1px 1px 2px rgba(0,0,0,0.6)' }}>
-                {playingReel.caption || ""}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Immersive Post Viewer Modal ── */}
-      {playingPost && (
-        <div 
-          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-          style={{ 
-            backgroundColor: 'rgba(0, 0, 0, 0.92)', 
-            backdropFilter: 'blur(15px)',
-            zIndex: 100000 
-          }}
-          onClick={() => setPlayingPost(null)}
-        >
-          <button 
-            type="button"
-            className="btn btn-link text-white position-absolute" 
-            style={{ top: '20px', right: '20px', fontSize: '30px', zIndex: 100001, textDecoration: 'none', border: 'none', outline: 'none' }}
-            onClick={() => setPlayingPost(null)}
-          >
-            ✕
-          </button>
-
-          <div 
-            className="d-flex flex-column align-items-center justify-content-center position-relative"
-            style={{ 
-              width: '100%', 
-              maxWidth: '680px', 
-              height: '80vh',
-              animation: 'scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {playingPost.mediaType === 'video' ? (
-              <video 
-                src={playingPost.imageUrl} 
-                style={{ 
-                  width: '100%', 
-                  height: '100%', 
-                  objectFit: 'cover', 
-                  borderRadius: '16px',
-                  boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
-                }}
-                autoPlay 
-                controls 
-                loop
-                playsInline
-              />
-            ) : (
-              <img src={playingPost.imageUrl} alt="post" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.8)' }} />
-            )}
-
-            <div 
-              style={{ 
-                position: 'absolute', 
-                bottom: '0', 
-                left: '0', 
-                right: '0',
-                background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 70%, transparent 100%)',
-                padding: '24px 20px 20px 20px',
-                borderRadius: '0 0 16px 16px',
-                pointerEvents: 'none'
-              }}
-            >
-              <div className="d-flex align-items-center gap-2 mb-2">
-                <img 
-                  src={playingPost.profilePicUrl || ('https://ui-avatars.com/api/?background=333&color=fff&name=' + (playingPost.username || 'U'))} 
-                  className="rounded-circle"
-                  style={{ width: '32px', height: '32px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.2)' }}
-                  alt=""
-                />
-                <span className="fw-bold text-white" style={{ fontSize: '14px', textShadow: '1px 1px 2px rgba(0,0,0,0.6)' }}>
-                  @{playingPost.username || 'instagram_user'}
-                </span>
-              </div>
-              <p className="text-white-50 m-0 text-truncate" style={{ fontSize: '13px', textShadow: '1px 1px 2px rgba(0,0,0,0.6)' }}>
-                {playingPost.caption || ""}
-              </p>
-            </div>
-          </div>
-        </div>
+      {/* ── PostPopup Modal for Shared Reels & Posts ── */}
+      {selectedPopupFeed && (
+        <PostPopup
+          feed={selectedPopupFeed}
+          onclose={() => setSelectedPopupFeed(null)}
+        />
       )}
 
       <style>{`

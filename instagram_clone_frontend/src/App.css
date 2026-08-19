@@ -239,6 +239,7 @@ body {
     transform: translateY(100%);
     opacity: 0;
   }
+
   100% {
     transform: translateY(0);
     opacity: 1;
@@ -246,8 +247,13 @@ body {
 }
 
 @keyframes ppFadeIn {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 
@@ -549,7 +555,9 @@ body {
 }
 
 /* Hide mobile drag handle on desktop */
-.pp-drag-handle-wrapper { display: none; }
+.pp-drag-handle-wrapper {
+  display: none;
+}
 
 /* ── Media — left 55% ── */
 .pp-media-wrapper {
@@ -575,9 +583,9 @@ body {
   position: absolute;
   bottom: 14px;
   right: 14px;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: #fff;
   border-radius: 99px;
   padding: 7px 10px;
@@ -586,7 +594,10 @@ body {
   align-items: center;
   transition: background 0.2s;
 }
-.pp-mute-btn:active { background: rgba(0,0,0,0.8); }
+
+.pp-mute-btn:active {
+  background: rgba(0, 0, 0, 0.8);
+}
 
 /* ── Right panel ── */
 .pp-right-panel {
@@ -596,7 +607,7 @@ body {
   flex-direction: column;
   overflow: hidden;
   background: #0a0a0a;
-  border-left: 1px solid rgba(255,255,255,0.07);
+  border-left: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 /* ── Header ── */
@@ -605,7 +616,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   flex-shrink: 0;
 }
 
@@ -650,7 +661,7 @@ body {
 
 .pp-fullname {
   font-size: 12px;
-  color: rgba(255,255,255,0.45);
+  color: rgba(255, 255, 255, 0.45);
   line-height: 1.2;
 }
 
@@ -676,12 +687,18 @@ body {
 }
 
 .pp-icon-btn:active {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   transform: scale(0.9);
 }
 
-.pp-close-btn { color: rgba(255,255,255,0.6); }
-.pp-close-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.pp-close-btn {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.pp-close-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
 
 /* ── Action Bar ── */
 .pp-action-bar {
@@ -703,13 +720,15 @@ body {
   align-items: center;
 }
 
-.pp-action-icon { color: #ffffff; }
+.pp-action-icon {
+  color: #ffffff;
+}
 
 /* ── Like Count ── */
 .pp-like-count {
   font-size: 14px;
   font-weight: 400;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255, 255, 255, 0.85);
   padding: 0 16px 8px;
   flex-shrink: 0;
 }
@@ -723,7 +742,7 @@ body {
 .pp-caption {
   font-size: 14px;
   line-height: 1.5;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255, 255, 255, 0.85);
   padding: 0 16px 10px;
   flex-shrink: 0;
 }
@@ -734,13 +753,15 @@ body {
   cursor: pointer;
 }
 
-.pp-caption-text { font-weight: 400; }
+.pp-caption-text {
+  font-weight: 400;
+}
 
 .pp-more-btn {
   background: none;
   border: none;
   padding: 0;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -749,7 +770,7 @@ body {
 /* ── Divider ── */
 .pp-divider {
   height: 1px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   margin: 4px 0;
   flex-shrink: 0;
 }
@@ -762,7 +783,10 @@ body {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
-.pp-comments-wrapper::-webkit-scrollbar { display: none; }
+
+.pp-comments-wrapper::-webkit-scrollbar {
+  display: none;
+}
 
 /* ══════════════════════════════════════════════
    PostPopup — Mobile overrides (≤768px)
@@ -770,7 +794,7 @@ body {
 ══════════════════════════════════════════════ */
 @media (max-width: 768px) {
   .pp-overlay {
-    background: rgba(0,0,0,0.72);
+    background: rgba(0, 0, 0, 0.72);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
   }
@@ -787,7 +811,7 @@ body {
     -webkit-overflow-scrolling: touch;
     border-radius: 20px 20px 0 0;
     flex-direction: column;
-    box-shadow: 0 -8px 40px rgba(0,0,0,0.6);
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.6);
     animation: ppSlideUp 0.35s cubic-bezier(0.34, 1.1, 0.64, 1) forwards;
     border: none;
     padding-bottom: 24px;
@@ -803,7 +827,7 @@ body {
     width: 36px;
     height: 4px;
     border-radius: 99px;
-    background: rgba(255,255,255,0.18);
+    background: rgba(255, 255, 255, 0.18);
   }
 
   .pp-media-wrapper {
@@ -825,8 +849,15 @@ body {
     overflow: visible;
   }
 
-  .profile-right-container { font-size: 12px; }
-  .username { font-size: 14px; }
-  .follow-container { width: 95%; }
+  .profile-right-container {
+    font-size: 12px;
+  }
+
+  .username {
+    font-size: 14px;
+  }
+
+  .follow-container {
+    width: 95% !important;
+  }
 }
-

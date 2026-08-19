@@ -24,11 +24,33 @@ import { BiDotsVerticalRounded } from 'react-icons/bi';
 import MorePopup from '../components/MorePopup';
 import ShareModal from '../components/ShareModal';
 import CommentsModal from '../components/CommentsModal';
+import DoubleTapLike from '../components/DoubleTapLike';
 import { API_BASE_URL } from '../config';
 import { logInteraction } from '../utils/interactionTracker';
 
 function ReelsPage() {
   const navigate = useNavigate()
+
+  const handleDoubleTapReel = async (reel) => {
+    if (!likes[reel.id]) {
+      setLikes(prev => ({ ...prev, [reel.id]: true }));
+      setlikecount(prev => ({ ...prev, [reel.id]: (prev[reel.id] || 0) + 1 }));
+      try {
+        const url = `${API_BASE_URL}/api/like`;
+        await fetch(url, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ id: reel.id, type: "reel" })
+        });
+        logInteraction({ reelId: reel.id, type: 'LIKE' });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
 
   const [reels, setReels] = useState([]);
   const [page, setPage] = useState(0);
@@ -303,33 +325,43 @@ function ReelsPage() {
             >
               {/* Video */}
               <div className='p-3' style={{ width: "100%", height: "100%" }}>
-                <video
-                  ref={el => (videoRefs.current[reel.id] = el)}
-                  data-reel-id={reel.id}
-                  className="w-100"
-                  style={{ borderRadius: '10px' }}
-                  src={reel.videoUrl}
-                  muted={globalMuted}
-                  loop
-                  onClick={() => togglePlayPause(reel.id)}
-                />
-                {/* Mute/Unmute */}
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '5%',
-                    right: '15%',
-                    cursor: 'pointer'
-                  }}
-                  className='reels-volume'
-                  onClick={() => toggleMute()}
+                <DoubleTapLike
+                  isLiked={likes[reel.id]}
+                  onDoubleTap={() => handleDoubleTapReel(reel)}
+                  onSingleTap={() => togglePlayPause(reel.id)}
+                  style={{ width: '100%', height: '100%' }}
                 >
-                  {globalMuted ? (
-                    <FaVolumeMute size={20} />
-                  ) : (
-                    <FaVolumeUp size={20} />
-                  )}
-                </span>
+                  <video
+                    ref={el => (videoRefs.current[reel.id] = el)}
+                    data-reel-id={reel.id}
+                    className="w-100"
+                    style={{ borderRadius: '10px' }}
+                    src={reel.videoUrl}
+                    muted={globalMuted}
+                    loop
+                  />
+                  {/* Mute/Unmute */}
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '5%',
+                      right: '15%',
+                      cursor: 'pointer',
+                      zIndex: 10
+                    }}
+                    className='reels-volume'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleMute();
+                    }}
+                  >
+                    {globalMuted ? (
+                      <FaVolumeMute size={20} />
+                    ) : (
+                      <FaVolumeUp size={20} />
+                    )}
+                  </span>
+                </DoubleTapLike>
               </div>
 
               {/* Actions */}

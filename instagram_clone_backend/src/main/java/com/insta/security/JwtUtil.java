@@ -2,17 +2,30 @@ package com.insta.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.security.Key;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
 
-    // Use a long random secret in production. Keep in application.properties or env var.
-    private final Key key = Keys.hmacShaKeyFor("rhgjgiuggk5ugg5g5uu5gjt5gj5gjh6yg5gy6ghg5655yu6u5kkhk5k5th".getBytes());
-    private final long validityInMs = 1000 * 60 * 60 * 24; // 24h
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    private Key key;
+    private final long validityInMs = 1000L * 60 * 60 * 24 * 7; // 7 days
+
+    @PostConstruct
+    public void init() {
+        // Require at least 32 characters for HMAC-SHA256 security
+        if (jwtSecret == null || jwtSecret.length() < 32) {
+            throw new IllegalStateException("JWT secret must be at least 32 characters. Set JWT_SECRET env variable.");
+        }
+        this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+    }
 
     public String generateToken(String subject) {
         Date now = new Date();

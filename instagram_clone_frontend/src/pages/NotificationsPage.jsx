@@ -220,10 +220,13 @@ const NotificationsPage = () => {
       const isVid = notif.post.mediaType === 'video' || (url && (url.includes('/video/upload/') || url.endsWith('.mp4')));
       return {
         id: notif.post.id,
+        type: 'post',
         mediaUrl: url,
         mediaType: isVid ? 'video' : 'image',
         caption: notif.post.caption || '',
-        likeCount: notif.post.likeCount || 0,
+        likeCount: typeof notif.post.likeCount === 'number' ? notif.post.likeCount : (notif.post.likes ? notif.post.likes.length : 0),
+        liked: notif.post.liked || false,
+        saved: notif.post.saved || false,
         user: notif.post.user || notif.actor || notif.recipient,
       };
     }
@@ -231,10 +234,13 @@ const NotificationsPage = () => {
       const url = notif.reel.videoUrl || notif.reel.reelurl || notif.reel.mediaUrl || null;
       return {
         id: notif.reel.id,
+        type: 'reel',
         mediaUrl: url,
         mediaType: 'video',
         caption: notif.reel.caption || '',
-        likeCount: notif.reel.likeCount || 0,
+        likeCount: typeof notif.reel.likeCount === 'number' ? notif.reel.likeCount : (notif.reel.likes ? notif.reel.likes.length : 0),
+        liked: notif.reel.liked || false,
+        saved: notif.reel.saved || false,
         user: notif.reel.user || notif.actor || notif.recipient,
       };
     }

@@ -141,9 +141,13 @@ public class MessageController {
             reelMap.put("caption", m.getReel().getCaption() != null ? m.getReel().getCaption() : "");
             try {
                 Reel reelObj = reelRepository.findById(m.getReel().getId()).orElse(null);
-                if (reelObj != null && reelObj.getUser() != null) {
-                    reelMap.put("username", reelObj.getUser().getUsername());
-                    reelMap.put("profilePicUrl", reelObj.getUser().getProfilePicUrl());
+                if (reelObj != null) {
+                    reelMap.put("likeCount", reelObj.getLikes() != null ? reelObj.getLikes().size() : 0);
+                    if (reelObj.getUser() != null) {
+                        reelMap.put("userId", reelObj.getUser().getId());
+                        reelMap.put("username", reelObj.getUser().getUsername());
+                        reelMap.put("profilePicUrl", reelObj.getUser().getProfilePicUrl());
+                    }
                 }
             } catch (Exception ignored) {
             }
@@ -166,7 +170,9 @@ public class MessageController {
                     postMap.put("imageUrl", postObj.getImageUrl());
                     postMap.put("caption", postObj.getCaption() != null ? postObj.getCaption() : "");
                     postMap.put("mediaType", postObj.getMediaType() != null ? postObj.getMediaType() : "image");
+                    postMap.put("likeCount", postObj.getLikes() != null ? postObj.getLikes().size() : 0);
                     if (postObj.getUser() != null) {
+                        postMap.put("userId", postObj.getUser().getId());
                         postMap.put("username", postObj.getUser().getUsername());
                         postMap.put("profilePicUrl", postObj.getUser().getProfilePicUrl());
                     }

@@ -10,6 +10,7 @@ import { BiDotsVerticalRounded } from 'react-icons/bi';
 import MorePopup from './MorePopup';
 import ShareModal from './ShareModal';
 import CommentsModal from './CommentsModal';
+import DoubleTapLike from './DoubleTapLike';
 import { API_BASE_URL } from '../config';
 import { logInteraction } from '../utils/interactionTracker';
 
@@ -18,6 +19,27 @@ function Feeds({ scrollcontainerref }) {
   // Global mute state — shared across all videos, persisted in localStorage
   const [globalMuted, setGlobalMuted] = useState(() => localStorage.getItem('globalMuted') !== 'false');
   const [playingState, setPlayingState] = useState({}); // Track play/pause state
+
+  const handleDoubleTapLike = async (feed) => {
+    if (!likes[feed.id]) {
+      setlikes((prev) => ({ ...prev, [feed.id]: true }));
+      setlikecount((prev) => ({ ...prev, [feed.id]: (prev[feed.id] || 0) + 1 }));
+      try {
+        const url = `${API_BASE_URL}/api/like`;
+        await fetch(url, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ id: feed.id, type: "post" })
+        });
+        logInteraction(feed.id, null, 'LIKE');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
   const token = localStorage.getItem("token");
   const videoRefs = useRef([]);
   const [hasMore, sethasMore] = useState(true)
@@ -526,58 +548,63 @@ function Feeds({ scrollcontainerref }) {
               }}><BiDotsVerticalRounded size={24} /></button>
           </div>
 
-          {feed.mediaType === "image" ? (
-            <img
-              src={feed.imageUrl}
-              className="card-img-top"
-              alt="Post"
-              style={{ maxHeight: "500px", objectFit: "cover" }}
-            />
-          ) : feed.mediaType === "canvas" ? (
-            <div
-              className="card-img-top d-flex justify-content-center align-items-center p-4 text-center text-white"
-              style={{
-                height: "380px",
-                background: feed.imageUrl,
-                borderRadius: '8px',
-                fontSize: '22px',
-                fontWeight: 'bold',
-                textShadow: '0 2px 5px rgba(0,0,0,0.6)',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                lineHeight: '1.4'
-              }}
-            >
-              "{feed.caption}"
-            </div>
-          ) : feed.mediaType === "video" ? (
-            <div className="position-relative">
-              <video
-                ref={(el) => (videoRefs.current[index] = el)}
-                data-index={index}
+          <DoubleTapLike
+            isLiked={likes[feed.id]}
+            onDoubleTap={() => handleDoubleTapLike(feed)}
+            onSingleTap={() => feed.mediaType === "video" && togglePlayPause(index)}
+          >
+            {feed.mediaType === "image" ? (
+              <img
+                src={feed.imageUrl}
                 className="card-img-top"
-                muted={globalMuted}
-                loop
-                playsInline
-                onClick={() => togglePlayPause(index)}
-                style={{ maxHeight: "500px", objectFit: "cover", cursor: "pointer" }}
-              >
-                <source src={feed.imageUrl} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-
-              {/* Mute/Unmute button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleMute();
+                alt="Post"
+                style={{ maxHeight: "500px", objectFit: "cover" }}
+              />
+            ) : feed.mediaType === "canvas" ? (
+              <div
+                className="card-img-top d-flex justify-content-center align-items-center p-4 text-center text-white"
+                style={{
+                  height: "380px",
+                  background: feed.imageUrl,
+                  borderRadius: '8px',
+                  fontSize: '22px',
+                  fontWeight: 'bold',
+                  textShadow: '0 2px 5px rgba(0,0,0,0.6)',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  lineHeight: '1.4'
                 }}
-                className="btn btn-dark position-absolute"
-                style={{ bottom: "20px", right: "10px", opacity: 0.8 }}
               >
-                {globalMuted ? <FaVolumeMute /> : <FaVolumeUp />}
-              </button>
-            </div>
-          ) : null}
+                "{feed.caption}"
+              </div>
+            ) : feed.mediaType === "video" ? (
+              <div className="position-relative">
+                <video
+                  ref={(el) => (videoRefs.current[index] = el)}
+                  data-index={index}
+                  className="card-img-top"
+                  muted={globalMuted}
+                  loop
+                  playsInline
+                  style={{ maxHeight: "500px", objectFit: "cover", cursor: "pointer" }}
+                >
+                  <source src={feed.imageUrl} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+
+                {/* Mute/Unmute button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleMute();
+                  }}
+                  className="btn btn-dark position-absolute"
+                  style={{ bottom: "20px", right: "10px", opacity: 0.8 }}
+                >
+                  {globalMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+                </button>
+              </div>
+            ) : null}
+          </DoubleTapLike>
           <div className="d-flex justify-content-between align-items-center" style={{ fontSize: '20px' }}>
 
             {/* Left icons */}

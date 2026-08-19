@@ -1,10 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { API_BASE_URL } from "../config";
 
 const Like = ({ id, type, initialLiked, initialCount, onLikeToggle }) => {
   const [liked, setLiked] = useState(initialLiked || false);
   const [count, setCount] = useState(initialCount || 0);
+
+  useEffect(() => {
+    if (initialLiked !== undefined) {
+      setLiked(initialLiked);
+    }
+  }, [initialLiked]);
+
+  useEffect(() => {
+    if (initialCount !== undefined) {
+      setCount(initialCount);
+    }
+  }, [initialCount]);
 
   const handleLike = async () => {
     try {
