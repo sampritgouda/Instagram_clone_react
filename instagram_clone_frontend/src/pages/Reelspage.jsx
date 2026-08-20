@@ -323,6 +323,27 @@ function ReelsPage() {
                 scrollSnapAlign: 'start'
               }}
             >
+              {/* Mute/Unmute */}
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '0%',
+                  right: '15%',
+                  cursor: 'pointer',
+                  zIndex: 10
+                }}
+                className='reels-volume'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMute();
+                }}
+              >
+                {globalMuted ? (
+                  <FaVolumeMute size={20} />
+                ) : (
+                  <FaVolumeUp size={20} />
+                )}
+              </span>
               {/* Video */}
               <div className='p-3' style={{ width: "100%", height: "100%" }}>
                 <DoubleTapLike
@@ -340,27 +361,7 @@ function ReelsPage() {
                     muted={globalMuted}
                     loop
                   />
-                  {/* Mute/Unmute */}
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: '5%',
-                      right: '15%',
-                      cursor: 'pointer',
-                      zIndex: 10
-                    }}
-                    className='reels-volume'
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleMute();
-                    }}
-                  >
-                    {globalMuted ? (
-                      <FaVolumeMute size={20} />
-                    ) : (
-                      <FaVolumeUp size={20} />
-                    )}
-                  </span>
+
                 </DoubleTapLike>
               </div>
 

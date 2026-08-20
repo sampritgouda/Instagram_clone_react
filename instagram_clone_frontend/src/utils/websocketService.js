@@ -1,5 +1,4 @@
 import { API_BASE_URL } from '../config';
-import { showDeviceNotification } from './notificationUtils';
 
 class WebSocketService {
   constructor() {
@@ -114,14 +113,6 @@ class WebSocketService {
             this.listeners.seen.forEach(fn => fn(data));
           } else if (headersStr.includes('/topic/notifications.')) {
             this.listeners.notification.forEach(fn => fn(data));
-            // Trigger native device notification
-            if (data.title && document.hidden) {
-              showDeviceNotification(data.title, {
-                body: data.body,
-                icon: data.senderProfilePicUrl || '/favicon.ico',
-                onClickUrl: '/messages'
-              });
-            }
           }
         } catch (e) {
           console.error('STOMP JSON parse error:', e);
