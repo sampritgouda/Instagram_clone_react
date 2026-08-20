@@ -102,11 +102,11 @@
 		</dependency>
 
 		<!-- Web Push (VAPID) — sends notifications even when browser is closed -->
-		<!-- Upgraded to 6.1.0 to fix SSLPeerUnverifiedException on Render/cloud (SNI bug in 5.x) -->
+		<!-- 5.1.2 is the LATEST version on Maven Central — 6.1.0 does NOT exist and breaks the build -->
 		<dependency>
 			<groupId>nl.martijndwars</groupId>
 			<artifactId>web-push</artifactId>
-			<version>6.1.0</version>
+			<version>5.1.2</version>
 		</dependency>
 		<!-- bcprov-jdk18on is the correct artifact for Java 17+ / Java 21 -->
 		<dependency>
