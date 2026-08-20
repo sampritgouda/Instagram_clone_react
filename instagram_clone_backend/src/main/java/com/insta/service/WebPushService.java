@@ -6,6 +6,7 @@ import com.insta.model.WebPushSubscription;
 import com.insta.repository.WebPushSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nl.martijndwars.webpush.Encoding;
 import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
 import nl.martijndwars.webpush.Subscription;
@@ -148,7 +149,7 @@ public class WebPushService {
                 );
                 Notification notification = new Notification(subscription, payloadJson);
                 
-                HttpPost httpPost = pushService.preparePost(notification);
+                HttpPost httpPost = pushService.preparePost(notification, Encoding.AES128GCM);
                 HttpResponse response = customHttpClient.execute(httpPost, null).get();
                 int statusCode = response.getStatusLine().getStatusCode();
 
