@@ -93,6 +93,7 @@ public class NotificationService {
             case FOLLOW:        return "started following you";
             case FOLLOW_REQUEST:return "sent you a follow request";
             case MENTION:       return text != null && !text.isBlank() ? "mentioned you: " + truncate(text, 60) : "mentioned you in a comment";
+            case MESSAGE:       return text != null && !text.isBlank() ? truncate(text, 60) : "sent you a message";
             default:            return text != null ? text : type.name().toLowerCase();
         }
     }

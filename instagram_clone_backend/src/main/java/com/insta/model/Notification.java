@@ -21,7 +21,8 @@ public class Notification {
         MENTION,
         FOLLOW,
         FOLLOW_REQUEST,
-        STORY_LIKE
+        STORY_LIKE,
+        MESSAGE
     }
 
     @Id
