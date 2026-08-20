@@ -54,7 +54,10 @@ public class WebPushService {
 
     @PostConstruct
     public void init() {
-        // Register BouncyCastle as a security provider (required for EC key operations)
+        // Enable SNI extension for TLS connections to Google FCM / Apple push servers
+        System.setProperty("jsse.enableSNIExtension", "true");
+
+        // Register BouncyCastle as security provider for EC key operations
         if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
             Security.addProvider(new BouncyCastleProvider());
         }
