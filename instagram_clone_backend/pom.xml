@@ -114,6 +114,12 @@
 			<artifactId>bcprov-jdk18on</artifactId>
 			<version>1.78.1</version>
 		</dependency>
+		<!-- Required by web-push library for VAPID JWT generation -->
+		<dependency>
+			<groupId>org.bitbucket.b_c</groupId>
+			<artifactId>jose4j</artifactId>
+			<version>0.9.6</version>
+		</dependency>
 
 	</dependencies>
 
